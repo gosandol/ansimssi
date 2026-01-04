@@ -32,7 +32,36 @@ const ServiceLayout = ({ title, children, onBack, onChatToggle, isChatOpen = fal
                             onClick={onChatToggle}
                             title="안심씨와 대화하기"
                         >
-                            <MessageSquare size={20} />
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ minWidth: '20px' }}>
+                                <defs>
+                                    <linearGradient id="serviceChatGradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                                        <stop stopColor="#22d3ee" />
+                                        <stop offset="0.5" stopColor="#818cf8" />
+                                        <stop offset="1" stopColor="#c084fc" />
+                                    </linearGradient>
+                                </defs>
+                                <path
+                                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                                    stroke="url(#serviceChatGradient)"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                                <path
+                                    d="M9 10h6"
+                                    stroke="url(#serviceChatGradient)"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                                <path
+                                    d="M12 7v6"
+                                    stroke="url(#serviceChatGradient)"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
                             <span>안심씨 대화</span>
                         </button>
                     )}

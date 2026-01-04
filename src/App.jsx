@@ -15,7 +15,7 @@ import SafetyView from './views/SafetyView';
 import HealthView from './views/HealthView';
 import LifeView from './views/LifeView';
 import EntertainmentView from './views/EntertainmentView';
-import { Newspaper, HelpCircle, Code, Lightbulb } from 'lucide-react';
+import { Newspaper, HelpCircle, Code, Lightbulb, Activity, ShieldCheck, Sun } from 'lucide-react';
 
 /* Ideally move these to a CSS module, but keeping inline for quick restoration of previous state if no module existed for App specific home */
 /* Actually, let's use a simple inline style object or class if MainLayout.module.css covers it? */
@@ -144,10 +144,9 @@ function App() {
   }
 
   const suggestions = [
-    { icon: <Newspaper size={16} />, text: 'Top tech news today' },
-    { icon: <Code size={16} />, text: 'Write a Python script' },
-    { icon: <Lightbulb size={16} />, text: 'Explain quantum computing' },
-
+    { icon: <Activity size={16} />, text: '고혈압 관리 방법 알려줘' },
+    { icon: <ShieldCheck size={16} />, text: '우리집 안전 점검 리스트' },
+    { icon: <Sun size={16} />, text: '오늘 미세먼지 농도 어때?' },
   ];
 
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -363,18 +362,21 @@ function App() {
               maxWidth: '800px'
             }}>
               {suggestions.map((item, index) => (
-                <button key={index} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.6rem 1rem',
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: '8px',
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.9rem',
-                  cursor: 'pointer',
-                }}>
+                <button
+                  key={index}
+                  onClick={() => handleSearch(item.text)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.6rem 1rem',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '8px',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                  }}>
                   {item.icon}
                   <span>{item.text}</span>
                 </button>

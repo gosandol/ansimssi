@@ -98,11 +98,12 @@
 
 .sidebar.collapsed .navItem span {
     font-size: 10px;
-    line-height: 1;
+    line-height: 1.2;
     display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: keep-all;
+    overflow: visible;
+    text-overflow: clip;
     max-width: 100%;
 }
 

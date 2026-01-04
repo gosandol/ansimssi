@@ -1,0 +1,98 @@
+.container {
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: 2rem;
+}
+
+.roomSection {
+    margin-bottom: 2.5rem;
+}
+
+.roomTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.deviceGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+.deviceCard {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    aspect-ratio: 1 / 1;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.deviceCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: var(--border-default);
+}
+
+.deviceCard.active {
+    background-color: white;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
+    border-color: var(--accent-primary);
+}
+
+.iconWrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.active .iconWrapper {
+    background-color: var(--accent-primary);
+    color: white;
+}
+
+.deviceInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.deviceName {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.deviceStatus {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.active .deviceStatus {
+    color: var(--accent-primary);
+    font-weight: 500;
+}
+
+/* Specific styling overrides for dark mode if needed (handled by vars generally) */
+@media (prefers-color-scheme: dark) {
+    .deviceCard.active {
+        background-color: rgba(37, 99, 235, 0.1);
+    }
+}

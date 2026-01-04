@@ -1,0 +1,289 @@
+.container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    height: 100%;
+    /* Fill MainLayout */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+    /* padding: 2rem 1rem; -- moved to contentArea */
+}
+
+/* Scrollable Area for Answer/Tabs */
+.contentArea {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 2rem 1rem;
+    padding-bottom: 40px;
+    scroll-behavior: smooth;
+}
+
+/* Scroll Section (Target for anchors) */
+.scrollSection {
+    scroll-margin-top: 20px;
+}
+
+.queryTitle {
+    font-size: 1.35rem;
+    /* Reduced to ~2/3 of 2rem */
+    font-weight: 500;
+    /* Slightly bolder for readability at smaller size */
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.divider {
+    height: 1px;
+    background-color: var(--border-subtle);
+    margin: 1.5rem 0;
+}
+
+/* Fixed Search Bar (Flex Item) */
+.stickySearchWrapper {
+    flex-shrink: 0;
+    width: 100%;
+    background: linear-gradient(to top, var(--bg-primary) 90%, transparent);
+    padding: 1rem;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    border-top: 1px solid transparent;
+    /* placeholder */
+}
+
+@media (max-width: 768px) {
+    .queryTitle {
+        font-size: 1.1rem;
+        /* Reduced mobile size */
+        margin-bottom: 1rem;
+    }
+
+    .stickySearchWrapper {
+        background: var(--bg-primary);
+        /* Solid bg on mobile usually better or gradient */
+        border-top: 1px solid var(--border-subtle);
+    }
+}
+
+.loadingState {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.5;
+    }
+}
+
+/* Bottom Sheet Styles */
+.bottomSheetBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    /* Align to bottom */
+    justify-content: center;
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.bottomSheetContent {
+    width: 100%;
+    max-width: 800px;
+    background: var(--bg-secondary);
+    /* Use secondary or card bg */
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding: 1.5rem;
+    padding-bottom: 3rem;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 80vh;
+    overflow-y: auto;
+    border: 1px solid var(--border-subtle);
+}
+
+.bottomSheetHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.bottomSheetHeader h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.bottomSheetHeader button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Masonry Grid Layout */
+.imageGrid {
+    column-count: 4;
+    column-gap: 1rem;
+    padding: 0 0.5rem;
+}
+
+.imageGridItem {
+    display: inline-block;
+    /* Essential for column layout */
+    width: 100%;
+    margin-bottom: 1rem;
+    break-inside: avoid;
+    /* Prevent splitting across columns */
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    border: 1px solid var(--border-subtle);
+}
+
+.imageGridItem:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--accent-primary);
+}
+
+.imageGridItem img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.imageSourceLink {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.imageSourceLink img.favicon {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+}
+
+.imageSourceLink span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+/* Responsive Columns */
+@media (max-width: 1024px) {
+    .imageGrid {
+        column-count: 3;
+    }
+}
+
+@media (max-width: 768px) {
+    .imageGrid {
+        column-count: 2;
+        column-gap: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .imageGrid {
+        column-count: 2;
+        /* Keep 2 columns on mobile */
+        column-gap: 0.5rem;
+    }
+}
+
+/* Side Chat Mode Overrides */
+.sideChatContainer {
+    max-width: 100%;
+    /* Override max-width: 900px */
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+.sideChatContainer .contentArea {
+    padding: 1rem;
+    padding-bottom: 20px;
+}
+
+.sideChatQueryBubble {
+    background-color: var(--bg-secondary);
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin: 1rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.sideChatSearch {
+    padding: 0.75rem;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-subtle);
+}

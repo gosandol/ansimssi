@@ -1,0 +1,187 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+    background-color: #1A1A1A;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 400px;
+    padding: 1.5rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.closeButton {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.closeButton:hover {
+    background-color: #333;
+    color: white;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.iconArea {
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+}
+
+.logo {
+    color: var(--text-secondary);
+}
+
+.title {
+    font-size: 1.75rem;
+    font-weight: 500;
+    margin: 0;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    color: white;
+    font-family: var(--font-sans);
+}
+
+.subtitle {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 0;
+    margin-bottom: 2rem;
+}
+
+.buttonGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.8rem;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.1s;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btnApple {
+    background-color: white;
+    color: black;
+}
+
+.btnGoogle {
+    background-color: #333;
+    color: white;
+}
+
+.btnKakao {
+    background-color: #FEE500;
+    color: #191919;
+}
+
+.btnNaver {
+    background-color: #03C75A;
+    color: white;
+}
+
+.btnEmail {
+    background-color: #333;
+    color: white;
+}
+
+.btnIcon {
+    /* Sizing handled in JSX or defaults */
+}
+
+.footer {
+    margin-top: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+}
+
+.footer a {
+    text-decoration: none;
+    color: var(--text-secondary);
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+.bottomTerms {
+    margin-top: 3rem;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+.bottomTerms a {
+    text-decoration: none;
+    color: var(--text-tertiary);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

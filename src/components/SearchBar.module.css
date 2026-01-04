@@ -1,0 +1,369 @@
+.searchContainer {
+    width: 100%;
+    max-width: 750px;
+    /* Perplexity width roughly */
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 0.75rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.searchContainer.focused {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 1px var(--border-focus);
+    /* Subtle focus ring */
+}
+
+.inputWrapper {
+    width: 100%;
+}
+
+.textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-family: var(--font-sans);
+    resize: none;
+    outline: none;
+    max-height: 200px;
+    min-height: 24px;
+    line-height: 1.5;
+    padding: 0;
+}
+
+.textarea::placeholder {
+    color: var(--text-tertiary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+@media (max-width: 600px) {
+    .textarea {
+        font-size: 0.95rem;
+        /* Smaller font on mobile */
+    }
+
+    .textarea::placeholder {
+        font-size: 0.9rem;
+        /* Even smaller placeholder if needed */
+    }
+}
+
+@media (max-width: 400px) {
+    .textarea {
+        font-size: 0.85rem;
+        /* Even smaller on very small screens */
+    }
+
+    .textarea::placeholder {
+        font-size: 0.8rem;
+    }
+}
+
+.actionBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.5rem;
+}
+
+.leftActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.actionButton {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.4rem 0.6rem;
+    border-radius: 20px;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.actionButton:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.actionText {
+    display: none;
+    /* Hidden on small screens or by default */
+}
+
+@media (min-width: 600px) {
+    .actionText {
+        display: inline;
+    }
+}
+
+.rightActions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.submitButton {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--bg-tertiary);
+    /* Inactive state */
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: not-allowed;
+    transition: all 0.2s;
+}
+
+.submitButton.active {
+    background-color: var(--accent-primary);
+    color: white;
+    cursor: pointer;
+}
+
+.submitButton.active:hover {
+    background-color: var(--accent-hover);
+}
+
+/* Pro Toggle Switch (Simple representation) */
+.proToggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-tertiary);
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked+.slider {
+    background-color: var(--accent-primary);
+}
+
+input:checked+.slider:before {
+    transform: translateX(14px);
+}
+
+/* Focus Menu Styles */
+.focusWrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.focusOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: transparent;
+}
+
+.focusMenu {
+    position: absolute;
+    top: 120%;
+    left: 0;
+    width: 300px;
+    background-color: #1f1f1f;
+    /* Dark background like reference */
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 0.5rem;
+    z-index: 101;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    color: var(--text-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+}
+
+@media (max-width: 600px) {
+    .focusMenu {
+        top: auto;
+        bottom: 120%;
+        /* Open Upwards on Mobile */
+        box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
+        /* Shadow upwards */
+    }
+}
+
+/* Explicit DropUp Mode for Thread View (All Screens) */
+.focusMenuDropUp {
+    top: auto;
+    bottom: 120%;
+    box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.focusHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+    color: var(--accent-primary);
+    /* Blue color for active header */
+    font-size: 0.95rem;
+}
+
+.headerIcon {
+    color: var(--accent-primary);
+}
+
+.focusDescription {
+    padding: 0 0.75rem 0.75rem 2.25rem;
+    /* Align with text */
+    font-size: 0.85rem;
+    color: #888;
+    cursor: pointer;
+}
+
+.divider {
+    height: 1px;
+    background-color: var(--border-subtle);
+    margin: 0.25rem 0.75rem;
+}
+
+.focusItem {
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.focusItem:hover {
+    background-color: #2a2a2a;
+}
+
+.focusItem.selected {
+    /* Optional selected state styling if not using check icon only */
+}
+
+.itemMain {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.itemLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.itemLabel::before {
+    /* Optional icon placeholder if needed */
+}
+
+/* Specific icons per type if desired, or just generic */
+.focusItem:nth-child(4) .itemLabel::before {
+    /* Hospital */
+    content: "🏥";
+    margin-right: 4px;
+    font-size: 0.9rem;
+}
+
+.focusItem:nth-child(5) .itemLabel::before {
+    /* Pharmacy */
+    content: "💊";
+    margin-right: 4px;
+    font-size: 0.9rem;
+}
+
+.focusItem:nth-child(6) .itemLabel::before {
+    /* Encyclopedia */
+    content: "📚";
+    margin-right: 4px;
+    font-size: 0.9rem;
+}
+
+.itemSub {
+    font-size: 0.8rem;
+    color: #888;
+    padding-left: 1.5rem;
+    /* Indent subtext */
+}
+
+.checkIcon {
+    color: var(--accent-primary);
+}
+
+.listening {
+    color: #f55 !important;
+    animation: pulse 1.5s infinite;
+    background-color: rgba(255, 85, 85, 0.1);
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 85, 85, 0.7);
+        transform: scale(1);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 85, 85, 0);
+        transform: scale(1.1);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 85, 85, 0);
+        transform: scale(1);
+    }
+}

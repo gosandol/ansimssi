@@ -1,0 +1,224 @@
+.container {
+    height: 100vh;
+    width: 100%;
+    background-color: #111;
+    /* Very dark background */
+    display: flex;
+    flex-direction: column;
+    color: white;
+    overflow: hidden;
+    position: relative;
+    padding-bottom: 2rem;
+    /* Safe area */
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    z-index: 10;
+}
+
+.iconButton {
+    background: #333;
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.iconButton:hover {
+    background: #444;
+}
+
+/* Main Card Area */
+.cardContainer {
+    flex: 1;
+    margin: 1rem 1.5rem;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    /* visual anchor */
+}
+
+.imageWrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #222;
+}
+
+.bgImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.overlayGradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom,
+            rgba(0, 0, 0, 0.1) 0%,
+            rgba(0, 0, 0, 0.1) 40%,
+            rgba(0, 0, 0, 0.4) 60%,
+            rgba(0, 0, 0, 0.8) 100%);
+}
+
+.contentOverlay {
+    position: relative;
+    z-index: 5;
+    padding: 2rem;
+    padding-bottom: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    /* Use position absolute top to mimic screenshot layouts with text near top? 
+       Actually screenshot shows text at TOP of card. */
+    justify-content: space-between;
+    height: 100%;
+}
+
+.contentOverlay {
+    justify-content: flex-start;
+    /* Align Top */
+    padding-top: 3rem;
+}
+
+.title {
+    font-size: 1.8rem;
+    font-weight: 500;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.description {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    margin-bottom: auto;
+    /* Push button to bottom */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    max-width: 90%;
+}
+
+.actionButton {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 30px;
+    border: none;
+    background-color: white;
+    color: black;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    margin-top: 2rem;
+    transition: transform 0.1s;
+}
+
+.actionButton:active {
+    transform: scale(0.98);
+}
+
+/* Bottom Nav */
+.bottomNav {
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+}
+
+.tabToggle {
+    background-color: #222;
+    border-radius: 30px;
+    display: flex;
+    padding: 4px;
+    position: relative;
+}
+
+.tab {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+    border: none;
+    color: #888;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-direction: column;
+    /* Icon top? No screenshot implies side or simple text. Let's stack or side */
+    flex-direction: column;
+    gap: 2px;
+    min-width: 80px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+/* Screenshot shows icon above text? Or just text?
+   Images look like: Bottom Left [Threads Icon+Text] [Spaces Icon+Text]
+   Wait, screenshot 1 shows 'Threads' and 'Space' tabs at bottom left.
+   Screenshot 2 shows FAB at bottom right.
+*/
+
+.tab.activeTab {
+    color: var(--accent-primary);
+    /* Cyan/Blue */
+}
+
+.fabButton {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: #333;
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+@media (min-width: 768px) {
+
+    /* Center it for desktop aesthetic test */
+    .container {
+        align-items: center;
+        background-color: #000;
+    }
+
+    .cardContainer {
+        width: 400px;
+        height: 700px;
+        flex: none;
+    }
+
+    .header,
+    .bottomNav {
+        width: 400px;
+    }
+}

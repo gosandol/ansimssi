@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Desktop Icon Generator</title>
+    <style>
+        /* Import the specific font requested */
+        @font-face {
+            font-family: 'PyeongChangPeace-Bold';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2206-02@1.0/PyeongChangPeace-Bold.woff2') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        body {
+            background-color: transparent;
+            /* Transparent for PNG capture */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'PyeongChangPeace-Bold', sans-serif;
+            /* Applied custom font */
+        }
+
+        /* Stage to capture full shadow without clipping */
+        #stage {
+            padding: 60px;
+            /* Space for shadow */
+            display: flex;
+        }
+
+        #icon-container {
+            width: 512px;
+            height: 512px;
+            background-color: transparent;
+            /* No Background */
+            /* Removed Border Radius & Box Shadow */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Alignment Wrapper */
+        .alignment-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            /* Align Right */
+            width: fit-content;
+            /* Scale up to fill the 512px box (Original was ~300px high) */
+            /* 1.6x Scale */
+            transform: scale(1.6);
+            /* Add Filter Shadow to the Content itself for visibility on Desktop */
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) drop-shadow(0 12px 24px rgba(0, 0, 0, 0.3));
+        }
+
+        /* Gradient SVG Icon */
+        .icon svg {
+            /* 226px base -> Scaled by 1.6 via wrapper */
+            width: 226px;
+            height: 226px;
+            /* Local filter removed, using Wrapper filter */
+            /* filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.1)); */
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .text {
+            font-size: 64px;
+            /* font-weight: 700; // Font itself is Bold */
+            margin-top: 5px;
+            letter-spacing: -0.02em;
+            text-align: center;
+            line-height: 1.1;
+
+            /* Gradient Text */
+            background: linear-gradient(135deg, #22d3ee 0%, #818cf8 50%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            /* Fallback */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="stage" style="display:none;"></div>
+
+    <!-- Canvas for High-Res Generation -->
+    <canvas id="iconCanvas" width="1024" height="1024" style="border:none; bg-color: transparent;"></canvas>
+
+    <script>
+        async function generateIcon() {
+            const canvas = document.getElementById('iconCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const size = 1024;
+            const centerX = size / 2;
+            const centerY = size / 2;
+
+            // Clear
+            ctx.clearRect(0, 0, size, size);
+
+            // Wait for Font
+            await document.fonts.ready;
+
+            // --- 1. Draw Background (REMOVED for Transparent Cutout) ---
+            // User requested "Nu-kki" (Cutout) only.
+            // No Squircle, No White Background. Pure Transparency.
+
+            // ctx.beginPath();
+            // ctx.roundRect(0, 0, size, size, radius);
+            // ctx.clip(); 
+
+            // ctx.fillStyle = bgGrad;
+            // ctx.fillRect(0, 0, size, size);
+
+            // --- 2. Content Layout (Strict Alignment) ---
+            const fontSize = 160;
+            ctx.font = `bold ${fontSize}px 'PyeongChangPeace-Bold'`;
+            ctx.textAlign = "center"; // We will calculate offsets manually for alignment
+            ctx.textBaseline = "alphabetic";
+
+            const textString = "AI 안심씨";
+            const textMetrics = ctx.measureText(textString);
+            const textWidth = textMetrics.width;
+
+            // Alignment Logic:
+            // "Tail to i" and "Right Align".
+            // Previous successful ratio: IconWidth / TextWidth = 226 / 258 = ~0.876
+            const alignRatio = 0.876;
+            const iconSize = textWidth * alignRatio;
+
+            const gap = 40;
+            const textHeight = textMetrics.actualBoundingBoxAscent;
+            const totalContentHeight = iconSize + gap + textHeight;
+
+            // Vertical centering of the Group
+            const contentStartY = (size - totalContentHeight) / 2;
+
+            // Horizontal centering of the Group
+            // The Group Width is determined by the Text Width (since Icon is narrower and Right Aligned)
+            const groupWidth = textWidth;
+            const groupStartX = (size - groupWidth) / 2;
+
+            // Text Position (Full Width of Group)
+            // ctx.fillText draws at x. If align is center, we draw at groupStartX + width/2
+            const textX = groupStartX + (textWidth / 2);
+            const textY = contentStartY + iconSize + gap + textHeight;
+
+            // Icon Position (Right Aligned to Text)
+            // Icon Right = Text Right = groupStartX + textWidth
+            // Icon Left = Icon Right - Icon Size
+            const iconX = (groupStartX + textWidth) - iconSize;
+            const iconY = contentStartY;
+
+            // --- 3. Draw Icon (SVG) with Depth ---
+            const svgData = `
+            <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="logoGradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#22d3ee" />
+                        <stop offset="0.5" stop-color="#818cf8" />
+                        <stop offset="1" stop-color="#c084fc" />
+                    </linearGradient>
+                </defs>
+                <g>
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="url(#logoGradient)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M9 10h6" stroke="url(#logoGradient)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M12 7v6" stroke="url(#logoGradient)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                </g>
+            </svg>`.trim();
+
+            const img = new Image();
+            // Encode SVG safely
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+
+            await new Promise((resolve) => {
+                img.onload = () => {
+                    ctx.save();
+                    // NO SHADOW for crisp cutout
+                    // ctx.shadowColor = "rgba(129, 140, 248, 0.25)"; 
+                    // ctx.shadowBlur = 40;
+                    // ctx.shadowOffsetY = 20;
+                    ctx.drawImage(img, iconX, iconY, iconSize, iconSize);
+                    ctx.restore();
+                    resolve();
+                };
+            });
+
+            // --- 4. Draw Gradient Text ---
+            const gradText = ctx.createLinearGradient(textX - textWidth / 2, 0, textX + textWidth / 2, 0);
+            gradText.addColorStop(0, "#22d3ee");
+            gradText.addColorStop(0.5, "#818cf8");
+            gradText.addColorStop(1, "#c084fc");
+
+            ctx.fillStyle = gradText;
+
+            // Text Shadow (Removed for Sharpness)
+            ctx.save();
+            // ctx.shadowColor = "rgba(0,0,0,0.1)";
+            // ctx.shadowBlur = 10;
+            // ctx.shadowOffsetY = 4;
+            ctx.fillText(textString, textX, textY);
+            ctx.restore();
+
+            // --- 5. Inner Border (Gloss) ---
+            // Draw a 1px inner stroke to define edges nicely
+            /*
+            ctx.beginPath();
+            ctx.roundRect(1, 1, size-2, size-2, radius);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "rgba(255,255,255,0.8)";
+            ctx.stroke();
+            */
+
+            console.log("Transparent Clean Icon Generated");
+            return canvas.toDataURL('image/png');
+        }
+
+        window.onload = generateIcon;
+    </script>
+</body>
+
+</html>

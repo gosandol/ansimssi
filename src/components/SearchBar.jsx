@@ -1,0 +1,339 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowRight, Paperclip, Globe, Focus, Mic, Search, ChevronDown, Check, Sparkles } from 'lucide-react';
+import styles from './SearchBar.module.css';
+import VoiceChatView from '../views/VoiceChatView';
+
+const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) => {
+    const [query, setQuery] = useState('');
+    const [isFocused, setIsFocused] = useState(false);
+    const [isFocusOpen, setIsFocusOpen] = useState(false);
+    const [activeSearchMode, setActiveSearchMode] = useState('web'); // web, hospital, pharmacy, encyclopedia
+
+    // Voice & Voice Chat Config
+    const [isListening, setIsListening] = useState(false);
+    const [showVoiceChat, setShowVoiceChat] = useState(false);
+    const textareaRef = useRef(null);
+    const recognitionRef = useRef(null);
+
+    // Initialize Speech Recognition
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = true; // Use continuous to not stop too early, manually stop on submit
+                recognition.interimResults = true; // Real-time feedback
+                recognition.lang = 'ko-KR';
+
+                recognition.onresult = (event) => {
+                    let finalTranscript = '';
+                    let interimTranscript = '';
+
+                    // Iterate results
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript;
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+
+                    const currentFullText = query + (query && !query.endsWith(' ') ? ' ' : '') + finalTranscript + interimTranscript;
+
+                    // Update UI with previews
+                    // Ideally we separate query (committed) from interim, but simplifying to setting query for now
+                    // Note: 'query' state dependency in useEffect might be stale. 
+                    // Better approach: Functional update or ref for current query.
+                    // However, standard SearchBar usually replaces content or appends.
+                    // Let's rely on transcript alone for the active session or handle appending carefully.
+                    // Simplified: Just setQuery to the latest transcript if we treat voice as "input mode".
+                    // But to support "type then speak", we need to append.
+                    // Given complexity, let's just use the transcript from THIS session.
+
+                    // Actually, simplest 'Gemini' feel: Voice replaces or appends.
+                    // Let's use functional update to be safe, but cleaner to just show what's being spoken.
+
+                    // AUTO-SUBMIT CHECK (on Final only)
+                    if (finalTranscript) {
+                        setQuery(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
+
+                        // Check for Question Endings
+                        const cleaned = finalTranscript.trim();
+                        // Common Korean Question/Request Endings
+                        const QUESTION_REGEX = /(?:알려줘|뭐야|무엇일까|어때|해줘|인가요|가요|나요|까요|합니까|입니까|옵니까|주세요|어떻게|왜|언제|어디서|누구|\?)$/;
+
+                        if (QUESTION_REGEX.test(cleaned) || cleaned.endsWith('?')) {
+                            // Trigger Search
+                            onSearch(query + (query ? ' ' : '') + finalTranscript);
+                            setQuery(''); // Reset after submit
+                            recognition.stop();
+                            setIsListening(false);
+                            return;
+                        }
+                    } else if (interimTranscript) {
+                        // Visual feedback of what's being said (optional, might flicker with setQuery prev)
+                        // For now, let's strictly handle final results to avoid jitter, 
+                        // OR if user wants "Gemini level", seeing text appear is key.
+                        // We can't easily mix 'prev' query with 'interim' without complex state.
+                        // So let's skip interim update to state for stability unless we refactor significantly.
+                        // User request: "Auto submit on question". Priority 1.
+                    }
+
+                    if (textareaRef.current) {
+                        textareaRef.current.style.height = 'auto';
+                        textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+                    }
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error', event.error);
+                    if (event.error !== 'no-speech') {
+                        setIsListening(false);
+                    }
+                };
+
+                recognition.onend = () => {
+                    // Only stop listening state if we truly stopped (not just pause)
+                    // With continuous=true, it stays on.
+                    setIsListening(false);
+                };
+
+                recognitionRef.current = recognition;
+            }
+        }
+    }, [query]); // Add query to dependency to append correctly? No, that restarts recognition.
+    // Better: Ref for query or functional updates. 
+    // Let's use functional update inside onresult. But onSearch needs latest total.
+    // Refactoring to use `useRef` for current query value to access inside callback without restarting effect.
+
+    const queryRef = useRef(query);
+    useEffect(() => { queryRef.current = query; }, [query]);
+
+    // Re-implement useEffect with queryRef
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = false; // Keep false for Mobile compatibility, keep simple 'speak then stop' flow
+                recognition.interimResults = true;
+                recognition.lang = 'ko-KR';
+
+                recognition.onresult = (event) => {
+                    let interim = '';
+                    let final = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            final += event.results[i][0].transcript;
+                        } else {
+                            interim += event.results[i][0].transcript;
+                        }
+                    }
+
+                    // Show interim
+                    // setQuery(queryRef.current + interim); // This might be tricky if typing mixed.
+                    // For safety and "Auto Submit" goal: Logic on FINAL result is most important.
+
+                    if (final) {
+                        const newQuery = queryRef.current + (queryRef.current && !queryRef.current.endsWith(' ') ? ' ' : '') + final;
+                        setQuery(newQuery);
+
+                        // AUTO SUBMIT LOGIC
+                        const cleaned = final.trim();
+                        const QUESTION_REGEX = /(?:알려줘|뭐야|무엇일까|어때|해줘|인가요|가요|나요|까요|합니까|입니까|옵니까|주세요|어떻게|왜|언제|어디서|누구|\?)$/;
+
+                        if (QUESTION_REGEX.test(cleaned) || cleaned.endsWith('?')) {
+                            recognition.stop();
+                            setIsListening(false);
+                            onSearch(newQuery);
+                            setQuery('');
+                        }
+                    }
+                };
+
+                recognition.onend = () => setIsListening(false);
+                recognitionRef.current = recognition;
+            }
+        }
+    }, []);
+
+    // Handle External Focus Trigger
+    useEffect(() => {
+        if (shouldFocus) {
+            textareaRef.current?.focus();
+            setIsFocused(true);
+        }
+    }, [shouldFocus]);
+
+    const toggleListening = () => {
+        if (isListening) {
+            recognitionRef.current?.stop();
+            setIsListening(false);
+        } else {
+            // Optional: setQuery('') if we want to clear before recording
+            recognitionRef.current?.start();
+            setIsListening(true);
+        }
+    };
+
+    const handleInput = (e) => {
+        setQuery(e.target.value);
+        autoResize(e.target);
+    };
+
+    const autoResize = (element) => {
+        element.style.height = 'auto';
+        element.style.height = element.scrollHeight + 'px';
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (query.trim()) {
+                onSearch(query);
+                setQuery('');
+                if (textareaRef.current) textareaRef.current.style.height = 'auto';
+            }
+        }
+    };
+
+    return (
+        <>
+            <div className={`${styles.searchContainer} ${isFocused ? styles.focused : ''}`}>
+                <div className={styles.inputWrapper}>
+                    <textarea
+                        ref={textareaRef}
+                        className={styles.textarea}
+                        placeholder={isListening ? "말씀하세요..." : (placeholder || "무엇이든 물어보세요...")}
+                        value={query}
+                        onChange={handleInput}
+                        onKeyDown={handleKeyDown}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setIsFocused(false)}
+                        rows={1}
+                    />
+                </div>
+
+                <div className={styles.actionBar}>
+                    <div className={styles.leftActions}>
+                        <button className={styles.actionButton} title="Attach">
+                            <Paperclip size={18} />
+                            <span className={styles.actionText}>첨부</span>
+                        </button>
+                        <div className={styles.focusWrapper}>
+                            <button
+                                className={`${styles.actionButton} ${isFocusOpen ? styles.active : ''}`}
+                                title="Focus"
+                                onClick={() => setIsFocusOpen(!isFocusOpen)}
+                            >
+                                <Search size={18} />
+                                {/* <ChevronDown size={14} style={{ marginLeft: '-2px' }} /> Removed per request */}
+                                <span className={styles.actionText}>검색</span>
+                            </button>
+
+                            {isFocusOpen && (
+                                <>
+                                    <div className={styles.focusOverlay} onClick={() => setIsFocusOpen(false)} />
+                                    <div className={`${styles.focusMenu} ${dropUpMode ? styles.focusMenuDropUp : ''}`}>
+                                        <div className={styles.focusHeader}>
+                                            <Search size={16} className={styles.headerIcon} />
+                                            <span>검색</span>
+                                            {activeSearchMode === 'web' && <Check size={16} className={styles.checkIcon} />}
+                                        </div>
+                                        <div className={styles.focusDescription} onClick={() => { setActiveSearchMode('web'); setIsFocusOpen(false); }}>
+                                            일상적인 질문에 대한 빠른 답변
+                                        </div>
+
+                                        <div className={styles.divider} />
+
+                                        {/* Hospital Search */}
+                                        <div
+                                            className={`${styles.focusItem} ${activeSearchMode === 'hospital' ? styles.selected : ''}`}
+                                            onClick={() => { setActiveSearchMode('hospital'); setIsFocusOpen(false); }}
+                                        >
+                                            <div className={styles.itemMain}>
+                                                <span className={styles.itemLabel}>병원검색</span>
+                                                {activeSearchMode === 'hospital' && <Check size={14} className={styles.checkIcon} />}
+                                            </div>
+                                            <div className={styles.itemSub}>주변 비대면진료 주치의 검색</div>
+                                        </div>
+
+                                        {/* Pharmacy Search */}
+                                        <div
+                                            className={`${styles.focusItem} ${activeSearchMode === 'pharmacy' ? styles.selected : ''}`}
+                                            onClick={() => { setActiveSearchMode('pharmacy'); setIsFocusOpen(false); }}
+                                        >
+                                            <div className={styles.itemMain}>
+                                                <span className={styles.itemLabel}>약국검색</span>
+                                                {activeSearchMode === 'pharmacy' && <Check size={14} className={styles.checkIcon} />}
+                                            </div>
+                                            <div className={styles.itemSub}>픽업 또는 배송 가능한 약국 찾기</div>
+                                        </div>
+
+                                        {/* Encyclopedia Search */}
+                                        <div
+                                            className={`${styles.focusItem} ${activeSearchMode === 'encyclopedia' ? styles.selected : ''}`}
+                                            onClick={() => { setActiveSearchMode('encyclopedia'); setIsFocusOpen(false); }}
+                                        >
+                                            <div className={styles.itemMain}>
+                                                <span className={styles.itemLabel}>건강백과</span>
+                                                {activeSearchMode === 'encyclopedia' && <Check size={14} className={styles.checkIcon} />}
+                                            </div>
+                                            <div className={styles.itemSub}>신뢰할 수 있는 공공데이터 기반 건강정보</div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className={styles.rightActions}>
+                        {/* 1. Dynamic Mic/Send Button */}
+                        {query.trim() ? (
+                            <button
+                                className={`${styles.submitButton} ${styles.active}`}
+                                onClick={() => {
+                                    onSearch(query);
+                                    setQuery('');
+                                    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+                                }}
+                            >
+                                <ArrowRight size={18} />
+                            </button>
+                        ) : (
+                            <button
+                                className={`${styles.actionButton} ${isListening ? styles.listening : ''}`}
+                                onClick={toggleListening}
+                                title="음성 입력"
+                            >
+                                <Mic size={20} color={isListening ? "#f55" : "currentColor"} />
+                            </button>
+                        )}
+
+                        {/* 2. Voice Chat Mode - Gemini Style */}
+                        <button
+                            className={styles.submitButton}
+                            onClick={() => setShowVoiceChat(true)}
+                            title="AI 음성 대화"
+                            style={{
+                                background: 'linear-gradient(135deg, #4285f4 0%, #9b72cb 50%, #d96570 100%)',
+                                color: 'white',
+                                border: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <Sparkles size={18} strokeWidth={1.5} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Voice Chat Overlay */}
+            <VoiceChatView isOpen={showVoiceChat} onClose={() => setShowVoiceChat(false)} />
+        </>
+    );
+};
+
+export default SearchBar;

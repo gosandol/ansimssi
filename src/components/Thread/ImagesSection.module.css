@@ -1,0 +1,68 @@
+.container {
+    margin-bottom: 2rem;
+    scroll-margin-top: 80px;
+    /* Offset for sticky header */
+}
+
+.header {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.header h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    /* 2 columns on mobile */
+    gap: 0.5rem;
+}
+
+.imageCard {
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--surface-secondary);
+}
+
+.image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.image:hover {
+    transform: scale(1.05);
+}
+
+.viewMoreBtn {
+    width: 100%;
+    padding: 0.8rem;
+    margin-top: 0.5rem;
+    background-color: var(--surface-tertiary);
+    border: none;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.viewMoreBtn:hover {
+    background-color: var(--surface-secondary);
+    color: var(--text-primary);
+}
+
+@media (min-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(4, 1fr);
+        /* 4 columns on desktop */
+    }
+}

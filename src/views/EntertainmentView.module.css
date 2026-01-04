@@ -1,0 +1,53 @@
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.fullCard {
+    min-height: 400px;
+}
+
+.appGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 2rem;
+    padding: 2rem 0;
+}
+
+.appIconBtn {
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.appIconBtn:hover {
+    transform: translateY(-5px);
+}
+
+.iconBox {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.addBtn {
+    background-color: var(--bg-tertiary);
+    border: 2px dashed var(--border-focus);
+    color: var(--text-tertiary);
+    font-size: 2rem;
+}
+
+.appName {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 1rem;
+}

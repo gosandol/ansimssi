@@ -15,12 +15,37 @@ import {
     Search,
     ArrowLeft,
     Settings,
-    Home // Added Home
+    Home,
+    Sparkles,
+    Download
 } from 'lucide-react';
 import { getHistory } from '../../lib/db';
 import styles from './Sidebar.module.css';
 
 const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, onSettingsClick, collapsed, onToggle }) => {
+    // PWA Install Logic
+    const [deferredPrompt, setDeferredPrompt] = React.useState(null);
+
+    React.useEffect(() => {
+        const handler = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) {
+            alert("이미 설치되어 있거나, 현재 브라우저에서 설치를 지원하지 않습니다.");
+            return;
+        }
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        setDeferredPrompt(null);
+    };
+
     const [history, setHistory] = React.useState([]);
     const [isHistoryOpen, setIsHistoryOpen] = React.useState(true); // Collapsible state
     const [hoveredItem, setHoveredItem] = React.useState(null); // Track hover for tooltips
@@ -141,14 +166,17 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                         />
                     </div>
                 ) : (
-                    <button
-                        className={styles.menuButton}
-                        onClick={onToggle}
-                        data-tooltip={collapsed ? "메뉴 펼치기" : "메뉴 접기"}
-                        aria-label={collapsed ? "메뉴 펼치기" : "메뉴 접기"}
-                    >
-                        <Menu size={24} />
-                    </button>
+                    <div className={styles.headerLogoGroup}>
+                        <button
+                            className={styles.menuButton}
+                            onClick={onToggle}
+                            data-tooltip={collapsed ? "메뉴 펼치기" : "메뉴 접기"}
+                            aria-label={collapsed ? "메뉴 펼치기" : "메뉴 접기"}
+                        >
+                            <Menu size={24} />
+                        </button>
+                        <span className={`${styles.sidebarLogoText} ${collapsed ? styles.hidden : ''}`}>안심씨</span>
+                    </div>
                 )}
             </div>
 
@@ -271,6 +299,30 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
             </div>
 
             <div className={styles.bottomSection}>
+                {/* What's New */}
+                <button
+                    className={styles.navItem}
+                    title="새로운 소식"
+                    onClick={() => alert("새로운 기능: 학술 탭, 날씨 날짜 수정, 홈 리셋 기능이 추가되었습니다!")}
+                >
+                    <div className={styles.navContent}>
+                        <span className={styles.iconWrapper}><Sparkles size={20} /></span>
+                        <span>새로운 소식</span>
+                    </div>
+                </button>
+
+                {/* Install App */}
+                <button
+                    className={styles.navItem}
+                    title="앱 설치하기"
+                    onClick={handleInstallClick}
+                >
+                    <div className={styles.navContent}>
+                        <span className={styles.iconWrapper}><Download size={20} /></span>
+                        <span>{deferredPrompt ? "앱 설치하기" : "앱 설치됨 (또는 불가)"}</span>
+                    </div>
+                </button>
+
                 {/* Settings & Help */}
                 <button
                     className={styles.navItem}

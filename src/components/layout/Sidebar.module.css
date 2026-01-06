@@ -42,6 +42,29 @@
     z-index: 10;
 }
 
+.headerLogoGroup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sidebarLogoText {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+    font-family: 'PyeongChangPeace-Bold', sans-serif;
+    letter-spacing: -0.02em;
+}
+
+.sidebarLogoText.hidden {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
 /* Center Hamburger in Collapsed Mode */
 .sidebar.collapsed .sidebarHeader {
     justify-content: center;

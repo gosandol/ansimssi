@@ -56,7 +56,7 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
                             <span>소스 검토 중 · {sources.length}</span>
                         </div>
                         <div className={styles.sourceGrid}>
-                            {sources.map((source, idx) => (
+                            {sources.filter(s => s).map((source, idx) => (
                                 <a key={idx} href={source.url || source.link} target="_blank" rel="noopener noreferrer" className={styles.sourceChip}>
                                     <img
                                         src={`https://www.google.com/s2/favicons?domain=${(() => {
@@ -86,10 +86,13 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
                 </div>
             )} */}
 
-            {/* Split Answer to render Doctor's Recommendation separately if present */}
+            {/* Answer Content - Split for Doctor's Recommendation */}
             {(() => {
+                // Defensive coding: Ensure answer is a string
+                const safeAnswer = (typeof answer === 'string') ? answer : '';
+
                 const recommendationMarker = "**안심씨의 최종 권고:**";
-                const parts = answer.split(recommendationMarker);
+                const parts = safeAnswer.split(recommendationMarker);
                 const mainBody = parts[0];
                 const recommendation = parts.length > 1 ? parts[1] : null;
 
@@ -144,7 +147,7 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
                     style={{ cursor: 'pointer' }}
                 >
                     <div className={styles.sourceIcons}>
-                        {sources.slice(0, 3).map((source, index) => (
+                        {sources.filter(s => s).slice(0, 3).map((source, index) => (
                             <div key={index} className={styles.sourceCircle} style={{ zIndex: 3 - index }}>
                                 <img
                                     src={`https://www.google.com/s2/favicons?domain=${(() => {

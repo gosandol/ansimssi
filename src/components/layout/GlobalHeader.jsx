@@ -18,10 +18,7 @@ const GlobalHeader = ({ onMenuClick, session, isThreadMode, onBackClick, activeS
                     <button className={`${styles.iconButton} ${styles.mobileOnly}`} onClick={onBackClick}>
                         <ArrowLeft size={24} />
                     </button>
-                    {/* Title Hidden in Thread Mode per User Request - Restoring for 'Index Click' requirement */}
-                    <div className={`${styles.logoArea} ${styles.desktopOnly}`} onClick={onBackClick} style={{ cursor: 'pointer', marginLeft: '0.5rem' }}>
-                        <span className={styles.logoText}>안심씨</span>
-                    </div>
+                    {/* Logo Removed from Thread Mode Header per User Request */}
                 </div>
 
                 {/* Center: View Toggle Pill */}

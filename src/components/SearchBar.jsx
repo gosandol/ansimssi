@@ -2,12 +2,67 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Paperclip, Globe, Focus, Mic, Search, ChevronDown, Check, Sparkles } from 'lucide-react';
 import styles from './SearchBar.module.css';
 import VoiceChatView from '../views/VoiceChatView';
+import { isKoreanMatch } from '../lib/hangul';
+import { SMART_SUGGESTIONS } from '../lib/searchKeywords';
 
 const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) => {
     const [query, setQuery] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const [isFocusOpen, setIsFocusOpen] = useState(false);
     const [activeSearchMode, setActiveSearchMode] = useState('web'); // web, hospital, pharmacy, encyclopedia
+
+    // Data & Suggestions
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    // Debounce Logic
+    const [debouncedQuery, setDebouncedQuery] = useState(query);
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedQuery(query);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [query]);
+
+    // Fetch Suggestions (Local + Global)
+    useEffect(() => {
+        if (!debouncedQuery.trim()) {
+            setSuggestions([]);
+            return;
+        }
+
+        const fetchSuggestions = async () => {
+            // 1. Local Smart Suggestions (Priority)
+            const matchedGroups = SMART_SUGGESTIONS.filter(item => isKoreanMatch(debouncedQuery, item.keyword));
+            let localSuggestions = [];
+            matchedGroups.forEach(group => {
+                localSuggestions.push(...group.intents);
+            });
+
+            // 2. Global Suggestions (Backend)
+            let globalSuggestions = [];
+            try {
+                const res = await fetch(`/api/suggest?q=${encodeURIComponent(debouncedQuery)}`);
+                if (res.ok) {
+                    globalSuggestions = await res.json();
+                }
+            } catch (err) {
+                console.error("Global suggest error:", err);
+            }
+
+            // 3. Merge (Local First, then Global unique)
+            const seen = new Set(localSuggestions.map(s => s.query));
+            const uniqueGlobal = globalSuggestions.filter(s => !seen.has(s.query));
+
+            // Limit total
+            const merged = [...localSuggestions, ...uniqueGlobal].slice(0, 8);
+
+            setSuggestions(merged);
+            setShowSuggestions(merged.length > 0);
+        };
+
+        fetchSuggestions();
+    }, [debouncedQuery]);
 
     // Voice & Voice Chat Config
     const [isListening, setIsListening] = useState(false);
@@ -177,8 +232,13 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
     };
 
     const handleInput = (e) => {
-        setQuery(e.target.value);
+        const val = e.target.value;
+        setQuery(val);
         autoResize(e.target);
+
+        if (!val.trim()) {
+            setShowSuggestions(false);
+        }
     };
 
     const autoResize = (element) => {
@@ -209,9 +269,36 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                         onChange={handleInput}
                         onKeyDown={handleKeyDown}
                         onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
+                        onBlur={() => {
+                            // Delay hide to allow click
+                            setTimeout(() => {
+                                setIsFocused(false);
+                                setShowSuggestions(false);
+                            }, 200);
+                        }}
                         rows={1}
                     />
+
+                    {/* Suggestion Dropdown */}
+                    {showSuggestions && (
+                        <div className={styles.suggestionMenu}>
+                            {suggestions.map((item, idx) => (
+                                <div
+                                    key={idx}
+                                    className={styles.suggestionItem}
+                                    onClick={() => {
+                                        onSearch(item.query);
+                                        setQuery('');
+                                        setShowSuggestions(false);
+                                    }}
+                                >
+                                    {/* Clean Text Only */}
+                                    <Search size={14} className={styles.headerIcon} />
+                                    <span>{item.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className={styles.actionBar}>
@@ -328,10 +415,10 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                         </button>
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* Voice Chat Overlay */}
-            <VoiceChatView isOpen={showVoiceChat} onClose={() => setShowVoiceChat(false)} />
+            < VoiceChatView isOpen={showVoiceChat} onClose={() => setShowVoiceChat(false)} />
         </>
     );
 };

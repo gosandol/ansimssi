@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import requests
+import xml.etree.ElementTree as ET
 from typing import List, Optional
 from tavily import TavilyClient
 import google.generativeai as genai
@@ -55,9 +57,9 @@ class SearchResponse(BaseModel):
 
 @app.post("/api/search", response_model=SearchResponse)
 async def search(request: SearchRequest):
-    if not tavily_client:
-        print("Error: Tavily Client not initialized (Key missing?)")
-        raise HTTPException(status_code=500, detail="Tavily Key missing")
+    # Tavily Client is now optional for fallback
+    # if not tavily_client:
+    #     print("Warning: Tavily Client not initialized")
     if not model:
         print("Error: Gemini Model not initialized (Key missing?)")
         raise HTTPException(status_code=500, detail="Gemini Key missing")
@@ -86,10 +88,18 @@ async def search(request: SearchRequest):
             print(f"RAG Error: {e}")
 
         # 1. Search with Tavily
-        print(f"Searching for: {request.query}")
-        search_result = tavily_client.search(query=request.query, search_depth="basic", include_images=True)
-        results = search_result.get("results", [])
-        images = search_result.get("images", [])
+        # 1. Search with Tavily
+        results = []
+        images = []
+        try:
+            if tavily_client:
+                print(f"Searching for: {request.query}")
+                search_result = tavily_client.search(query=request.query, search_depth="basic", include_images=True)
+                results = search_result.get("results", [])
+                images = search_result.get("images", [])
+        except Exception as e:
+            print(f"Tavily Search Error (Falling back to Gemini): {e}")
+            # Proceed with empty results/images
         
         # Format context (RAG + Search Results)
         search_context = "\n\n".join([
@@ -100,43 +110,48 @@ async def search(request: SearchRequest):
         full_context = f"{rag_context}\n\n=== WEB SEARCH RESULTS ===\n{search_context}"
 
         # 2. Generate Answer with Gemini
-        system_prompt = """You are Ansimssi (안심씨), a professional "AI Principal Doctor" (AI 주치의) and safety caregiver for Korean users.
-        
-        TASK:
-        0. **CRISIS PROTOCOL (HIGHEST PRIORITY)**:
-           - IF the query implies **suicide, self-harm, or immediate life-threatening emergency** (e.g., "죽고 싶어", "자살", "숨을 못 쉬겠어", "살려줘"):
-             Output specific emergency guidance:
-             "생명의 소중함을 잊지 마세요. 지금 즉시 도움이 필요하다면 아래 번호로 연락하세요.
-             * 🆘 **119** (응급상황)
-             * 📞 **109** (24시간 자살예방 상담전화)
-             * ☎️ **1577-0199** (정신건강 상담전화)
-             당신은 혼자가 아닙니다. 전문가의 도움을 받으세요."
-             (Skip the rest of the logic)
+        system_prompt = """You are Ansimssi (안심씨), a highly capable AI Assistant specializing in Health, Safety, and Daily Life, but also an expert in Education, Technology, and Hobbies.
 
-        1. Answer the user's query **based ONLY on the provided context**. **Do NOT hallucinate** or invent medical treatments not present in the sources.
-        2. PRIORITIZE information labeled [OFFICIAL HEALTH GUIDELINE] over web search results.
-        3. Identity: If asked "Who are you?", answer: "네, 저는 당신의 AI 주치의 겸 안전돌봄이 안심씨입니다. 무엇을 도와드릴까요?"
-        4. STRUCTURE:
-           - Provide a comprehensive, empathetic answer first.
-           - **MANDATORY**: End every health/medical/safety advice with a specific section:
-             
-             **안심씨의 최종 권고:**
-             - [Clear, actionable advice 1]
-             - [Clear, actionable advice 2]
-             - (Optional) "전문 의료진과의 상담을 권장합니다."
+        **CORE OBJECTIVE**: Provide "Gemini-level" or "Expert-level" comprehensive answers. Your responses must be structured, detailed, and visually organized.
+
+        **CRISIS PROTOCOL (HIGHEST PRIORITY)**:
+           - IF the query implies **suicide, self-harm, or immediate life-threatening emergency**:
+             Output specific emergency guidance (119, 109, 1577-0199) and STOP.
+
+        **ANSWER GUIDELINES**:
+        1. **Context & Knowledge**: 
+           - Use provided Context if available.
+           - If Context is missing (Search failure), RELY HEAVILY on your extensive **internal knowledge**. Do not be vague. Provide specific facts, brand names (e.g., Commax, Hyundai for wallpads), methods, and numbers.
         
-        5. Disclaimer Logic (Return 'disclaimer_type' field):
-           - If the query implies medical/health advice -> "medical"
-           - Otherwise -> "general"
+        2. **Structure & Formatting (MANDATORY)**:
+           - Use **Markdown Headers (##, ###)** to divide sections.
+           - Use **Bold text** for key terms.
+           - Use **Bulleted/Numbered Lists** for readability.
+           - **Introduction**: Briefly define the topic.
+           - **Main Content**: Break down into logical categories (e.g., "Key Features", "Common Issues", "Pros/Cons", "How-to").
+           - **Actionable Advice/Tips**: Practical steps.
+        
+        3. **Tone**:
+           - Professional, authoritative, yet friendly and empathetic.
+           - Like a knowledgeable consultant or chief physician explaining to a client.
+
+        4. **Adaptive Closing (Crucial for User Engagement)**:
+           - **DO NOT** use a fixed "Final Recommendation" footer.
+           - Instead, end the answer organically based on context:
+             - **For Problems/Troubleshooting**: Offer a specific "💡 Honey Tip" (e.g., "Reset button covers are often hidden under logos").
+             - **For General Info**: Propose a **Follow-up Question** (e.g., "Do you know your wallpad model number? I can find the specific manual.").
+             - **For Services**: Suggest connecting to a service (e.g., "Shall I connect you to the maintenance office?").
+             - **For Safety**: Gently remind of caution only if relevant.
+        
+        5. **Disclaimer Logic**:
+           - Return "medical" ONLY if the query is strictly medical/treatment related.
+           - Return "none" for general, life, tech, or education topics to avoid visual clutter.
         
         OUTPUT FORMAT (JSON ONLY):
         {
-            "answer": "Your answer in Korean Markdown...",
-            "disclaimer_type": "medical" | "general"
+            "answer": "Your comprehensive Korean Markdown answer...",
+            "disclaimer_type": "medical" | "none"
         }
-        
-        Be authoritative yet kind. Use medical terminology correctly but explain it simply.
-        ALWAYS answer in KOREAN.
         """
         
         prompt = f"{system_prompt}\n\nContext:\n{full_context}\n\nQuery: {request.query}"
@@ -157,12 +172,12 @@ async def search(request: SearchRequest):
             if dis_type == "medical":
                 disclaimer = DISCLAIMER_MEDICAL
             else:
-                disclaimer = DISCLAIMER_GENERAL
+                disclaimer = "" # No disclaimer for general topics to keep it clean
                 
         except json.JSONDecodeError:
             print("Warning: Failed to parse JSON, falling back to raw text")
             answer = response.text
-            disclaimer = DISCLAIMER_GENERAL
+            disclaimer = "" # Fallback: no disclaimer to be safe/clean
 
         # 3. Related Questions (Mock for now to save latency/tokens)
         related_questions = [
@@ -196,6 +211,50 @@ async def get_health_data():
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/suggest")
+async def get_suggestions(q: str):
+    """
+    Proxies Google Suggest API and classifies intents.
+    """
+    if not q:
+        return []
+    
+    try:
+        # 1. Fetch from Google Suggest
+        url = f"http://suggestqueries.google.com/complete/search?client=firefox&q={q}"
+        response = requests.get(url, timeout=2)
+        if response.status_code == 200:
+            data = response.json()
+            suggestions = data[1] # List of strings
+            
+            # 2. Smart Classification
+            results = []
+            for text in suggestions[:6]: # Limit to 6
+                # Determine Type/Icon
+                type_ = "search"
+                if any(x in text for x in ["방법", "법", "how to", "guide", "tip"]):
+                    type_ = "tips"
+                elif any(x in text for x in ["병원", "근처", "near", "위치", "장소", "맛집"]):
+                    type_ = "map"
+                elif any(x in text for x in ["가격", "비용", "price", "cost", "요금"]):
+                    type_ = "info"
+                elif any(x in text for x in ["추천", "recommend", "best", "top"]):
+                    type_ = "reco"
+                elif any(x in text for x in ["오류", "고장", "error", "fix", "안돼"]):
+                    type_ = "troubleshoot"
+                
+                results.append({
+                    "query": text,
+                    "label": text,
+                    "type": type_
+                })
+            return results
+    except Exception as e:
+        print(f"Suggestion Error: {e}")
+        return []
+    
+    return []
 
 @app.get("/")
 def read_root():

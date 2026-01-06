@@ -8,6 +8,13 @@ export const SMART_SUGGESTIONS = [
         ]
     },
     {
+        keyword: "우리집 ai",
+        intents: [
+            { query: "안심씨가 뭐예요?", type: "info", label: "안심씨 AI 소개 (우리집 AI)" },
+            { query: "안심씨 사용법 알려줘", type: "guide", label: "안심씨 사용 가이드" }
+        ]
+    },
+    {
         keyword: "우리집",
         intents: [
             { query: "우리집 안전 점검 해줘", type: "check", label: "우리집 안전 점검 시작" },
@@ -18,7 +25,8 @@ export const SMART_SUGGESTIONS = [
         keyword: "비대면진료",
         intents: [
             { query: "비대면 진료 신청 방법", type: "guide", label: "비대면 진료 신청 가이드" },
-            { query: "근처 비대면 진료 가능 병원", type: "map", label: "비대면 진료 병원 찾기" }
+            { query: "근처 비대면 진료 가능 병원", type: "map", label: "비대면 진료 병원 찾기" },
+            { query: "안심씨 새로닥터 소개", type: "info", label: "안심씨 새로닥터 (비대면 진료)" }
         ]
     },
     {
@@ -47,6 +55,13 @@ export const SMART_SUGGESTIONS = [
         intents: [
             { query: "안심프렌즈 소개", type: "info", label: "안심프렌즈 서비스 소개" },
             { query: "안심프렌즈 신청 방법", type: "guide", label: "안심프렌즈 이용 신청" }
+        ]
+    },
+    {
+        keyword: "안심태블릿",
+        intents: [
+            { query: "안심태블릿 기능 소개", type: "info", label: "안심태블릿 주요 기능" },
+            { query: "안심태블릿 대여 신청", type: "guide", label: "안심태블릿 대여/신청" }
         ]
     },
     {

@@ -138,7 +138,10 @@ async def search(request: SearchRequest):
         4. **Adaptive Closing (Crucial for User Engagement)**:
            - **DO NOT** use a fixed "Final Recommendation" footer.
            - Instead, end the answer organically based on context:
-             - **For Problems/Troubleshooting**: Offer a specific "💡 Honey Tip" (e.g., "Reset button covers are often hidden under logos").
+             - **Adaptive Closing / Tips (Strict Branding)**:
+               - **For Korean Answers**: You MUST use the label "**💡 꿀팁:**" (do not use "Honey Tip" in Korean output).
+               - **For English Answers**: You MUST use the label "**💡 Honey Tip:**" (do not use "꿀팁" in English output).
+               - Offer a specific, high-value tip based on the context.
              - **For General Info**: Propose a **Follow-up Question** (e.g., "Do you know your wallpad model number? I can find the specific manual.").
              - **For Services**: Suggest connecting to a service (e.g., "Shall I connect you to the maintenance office?").
              - **For Safety**: Gently remind of caution only if relevant.

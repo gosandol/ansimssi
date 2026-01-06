@@ -208,6 +208,11 @@
     width: 100%;
     height: auto;
     display: block;
+    transition: transform 0.4s ease;
+}
+
+.imageGridItem:hover img {
+    transform: scale(1.03);
 }
 
 .imageSourceLink {

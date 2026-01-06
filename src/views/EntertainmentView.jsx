@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ServiceLayout from '../components/ServiceLayout';
+import ServiceLayout from '../layouts/ServiceLayout';
 import WidgetCard from '../components/WidgetCard';
 import { Gamepad2, Brain, BookOpen, Music, Video } from 'lucide-react';
 import styles from './EntertainmentView.module.css';

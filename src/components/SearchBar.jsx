@@ -39,15 +39,30 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                 localSuggestions.push(...group.intents);
             });
 
+            // OPTIMISTIC UPDATE: Show local matches immediately!
+            if (localSuggestions.length > 0) {
+                setSuggestions(localSuggestions);
+                setShowSuggestions(true);
+            }
+
             // 2. Global Suggestions (Backend)
             let globalSuggestions = [];
             try {
-                const res = await fetch(`/api/suggest?q=${encodeURIComponent(debouncedQuery)}`);
+                // Short timeout for global suggestions to prevent hanging
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout
+
+                const res = await fetch(`/api/suggest?q=${encodeURIComponent(debouncedQuery)}`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
                 if (res.ok) {
                     globalSuggestions = await res.json();
                 }
             } catch (err) {
-                console.error("Global suggest error:", err);
+                // Ignore abort or fetch errors, just keep local
+                // console.warn("Global suggest skipped/failed", err);
             }
 
             // 3. Merge (Local First, then Global unique)
@@ -57,6 +72,7 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
             // Limit total
             const merged = [...localSuggestions, ...uniqueGlobal].slice(0, 8);
 
+            // Update again with full list (prevents flickering if identical)
             setSuggestions(merged);
             setShowSuggestions(merged.length > 0);
         };

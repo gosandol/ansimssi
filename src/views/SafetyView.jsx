@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ServiceLayout from '../components/ServiceLayout';
+import ServiceLayout from '../layouts/ServiceLayout';
 import WidgetCard from '../components/WidgetCard';
 import { ShieldAlert, Video, Lock, Zap, Flame, Droplets } from 'lucide-react';
 import styles from './SafetyView.module.css';

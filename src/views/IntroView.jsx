@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, ArrowRight, PenSquare, Layers, Box } from 'lucide-react';
-import LoginModal from '../components/LoginModal';
-import SettingsModal from '../components/SettingsModal';
+import LoginModal from '../components/modals/LoginModal';
+import SettingsModal from '../components/modals/SettingsModal';
 import styles from './IntroView.module.css';
 
 import introCabinet from '../assets/intro_cabinet.png';

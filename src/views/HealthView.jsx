@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ServiceLayout from '../components/ServiceLayout';
+import ServiceLayout from '../layouts/ServiceLayout';
 import WidgetCard from '../components/WidgetCard';
 import { Activity, Heart, Calendar, Pill, Stethoscope, FileText, ChevronRight } from 'lucide-react';
 import styles from './HealthView.module.css';

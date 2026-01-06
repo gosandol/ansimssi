@@ -4,11 +4,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
-import xml.etree.ElementTree as ET
 from typing import List, Optional
 from tavily import TavilyClient
 import google.generativeai as genai
-from kdca_service import KdcaService
+# from kdca_service import KdcaService 
 
 # Load environment variables
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -25,13 +24,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from services.search_manager import SearchManager
+
 # Initialize Clients
 tavily_api_key = os.getenv("TAVILY_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 # Initialize Services
-tavily_client = TavilyClient(api_key=tavily_api_key) if tavily_api_key else None
-kdca_service = KdcaService()
+# kdca_service = KdcaService()
+search_manager = SearchManager()
 
 if gemini_api_key:
     genai.configure(api_key=gemini_api_key)
@@ -53,13 +54,11 @@ class SearchResponse(BaseModel):
     disclaimer: str
     sources: List[Source]
     images: List[str]
+    academic: List[dict]
     related_questions: List[str]
 
 @app.post("/api/search", response_model=SearchResponse)
 async def search(request: SearchRequest):
-    # Tavily Client is now optional for fallback
-    # if not tavily_client:
-    #     print("Warning: Tavily Client not initialized")
     if not model:
         print("Error: Gemini Model not initialized (Key missing?)")
         raise HTTPException(status_code=500, detail="Gemini Key missing")
@@ -70,7 +69,6 @@ async def search(request: SearchRequest):
         matched_topics = []
         try:
             # Load data if not loaded (basic caching)
-            # In production, load this once at startup
             json_path = os.path.join(os.path.dirname(__file__), 'data', 'medical_data.json')
             if os.path.exists(json_path):
                 import json
@@ -87,27 +85,26 @@ async def search(request: SearchRequest):
         except Exception as e:
             print(f"RAG Error: {e}")
 
-        # 1. Search with Tavily
-        # 1. Search with Tavily
-        results = []
-        images = []
-        try:
-            if tavily_client:
-                print(f"Searching for: {request.query}")
-                search_result = tavily_client.search(query=request.query, search_depth="basic", include_images=True)
-                results = search_result.get("results", [])
-                images = search_result.get("images", [])
-        except Exception as e:
-            print(f"Tavily Search Error (Falling back to Gemini): {e}")
-            # Proceed with empty results/images
+        # 1. 5-Tier Hybrid Search (SearchManager)
         
+        # Date Injection for Search
+        from datetime import datetime
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        search_query = request.query
+        if any(w in request.query for w in ["오늘", "날씨", "뉴스", "today", "weather", "news"]):
+            search_query = f"{search_query} {today_str}"
+            
+        results, images, source_engine = search_manager.search(search_query)
+        academic_papers = search_manager.search_academic(search_query)
+        print(f"Search Completed via Engine: {source_engine}")
+
         # Format context (RAG + Search Results)
         search_context = "\n\n".join([
             f"Source '{r['title']}': {r['content']}" 
             for r in results[:5] 
         ])
         
-        full_context = f"{rag_context}\n\n=== WEB SEARCH RESULTS ===\n{search_context}"
+        full_context = f"{rag_context}\n\n=== WEB SEARCH RESULTS (Source: {source_engine}) ===\n{search_context}"
 
         # 2. Generate Answer with Gemini
         system_prompt = """You are Ansimssi (안심씨), a highly capable AI Assistant specializing in Health, Safety, and Daily Life, but also an expert in Education, Technology, and Hobbies.
@@ -156,8 +153,11 @@ async def search(request: SearchRequest):
             "disclaimer_type": "medical" | "none"
         }
         """
+
+        from datetime import datetime
+        today_date = datetime.now().strftime("%Y-%m-%d")
         
-        prompt = f"{system_prompt}\n\nContext:\n{full_context}\n\nQuery: {request.query}"
+        prompt = f"{system_prompt}\n\n[SYSTEM NOTE: Today is {today_date}. If the user asks for 'today', 'weather', or 'news', use this date.]\n\nContext:\n{full_context}\n\nQuery: {request.query}"
         
         response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
         
@@ -191,15 +191,30 @@ async def search(request: SearchRequest):
 
         # Map sources
         sources = [
-            Source(title=r['title'], url=r['url'], content=r['content']) 
-            for r in results[:5]
+            Source(title=r['title'], url=r.get('url', r.get('link', '#')), content=r['content']) 
+            for r in results[:5] 
+            if 'title' in r and 'content' in r # Safety check
         ]
+        
+        # --- SELF IMPROVEMENT LOOP ---
+        # If we used a live engine (not mock/kb), save this successful interaction
+        if source_engine in ["google", "tavily", "exa", "brave"] and answer and len(sources) > 0:
+             search_manager.knowledge_base.save_interaction(
+                 query=request.query,
+                 response_data={
+                     "answer": answer,
+                     "sources": results[:5],
+                     "images": images,
+                     "academic": academic_papers
+                 }
+             )
 
         return SearchResponse(
             answer=answer,
             disclaimer=disclaimer,
             sources=sources,
             images=images,
+            academic=academic_papers,
             related_questions=related_questions
         )
 
@@ -209,11 +224,8 @@ async def search(request: SearchRequest):
 
 @app.get("/api/health-data")
 async def get_health_data():
-    try:
-        data = kdca_service.get_health_data()
-        return data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Placeholder for KDCA service
+    return {"status": "ok", "data": "Health data placeholder"}
 
 @app.get("/api/suggest")
 async def get_suggestions(q: str):

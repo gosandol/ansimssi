@@ -1,5 +1,5 @@
 import React from 'react';
-import { Copy, Share, RotateCcw, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, MoreVertical, MoreHorizontal, Search } from 'lucide-react';
+import { Copy, Share, RotateCcw, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight, MoreVertical, MoreHorizontal, Search, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from './ThreadComponents.module.css';
@@ -22,7 +22,8 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
                         </div>
                     ) : (
                         <div className={styles.thinkingProcess}>
-                            <span>생각하는 과정...</span>
+                            <Loader2 size={18} className={styles.spinningLoader} />
+                            <span>답변 생성 중...</span>
                         </div>
                     )}
                 </div>
@@ -54,9 +55,9 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
                         <div className={styles.stepHeader}>
                             <span>소스 검토 중 · {sources.length}</span>
                         </div>
-                        <div className={styles.processSources}>
-                            {sources.slice(0, 5).map((source, idx) => (
-                                <a key={idx} href={source.url || source.link} target="_blank" rel="noopener noreferrer" className={styles.processSourceItem}>
+                        <div className={styles.sourceGrid}>
+                            {sources.map((source, idx) => (
+                                <a key={idx} href={source.url || source.link} target="_blank" rel="noopener noreferrer" className={styles.sourceChip}>
                                     <img
                                         src={`https://www.google.com/s2/favicons?domain=${(() => {
                                             try { return new URL(source.url || source.link).hostname; } catch { return 'google.com'; }
@@ -66,11 +67,6 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
                                     <span>{source.title}</span>
                                 </a>
                             ))}
-                            {sources.length > 5 && (
-                                <div className={styles.processSourceItem} style={{ pointerEvents: 'none' }}>
-                                    <span>...외 {sources.length - 5}개 더보기</span>
-                                </div>
-                            )}
                         </div>
                     </div>
 

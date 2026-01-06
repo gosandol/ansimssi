@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Sidebar from '../components/Sidebar';
-import GlobalHeader from '../components/GlobalHeader';
+import Sidebar from '../components/layout/Sidebar';
+import GlobalHeader from '../components/layout/GlobalHeader';
 import styles from './MainLayout.module.css';
 import { X } from 'lucide-react';
 

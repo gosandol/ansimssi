@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ServiceLayout from '../components/ServiceLayout';
+import ServiceLayout from '../layouts/ServiceLayout';
 import WidgetCard from '../components/WidgetCard';
 import { Megaphone, MessageCircle, Truck, Wrench } from 'lucide-react';
 import styles from './LifeView.module.css';

@@ -1,0 +1,176 @@
+.container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-primary);
+    position: relative;
+    /* Ensure it fits within the MainLayout content area */
+}
+
+/* Main Area (The App Dashboard) */
+.mainArea {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: flex 0.3s ease, margin-right 0.3s ease;
+    overflow: hidden;
+    position: relative;
+    z-index: 10;
+    background-color: var(--bg-primary);
+}
+
+.header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    background-color: var(--bg-primary);
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.backButton {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.backButton:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.chatToggleButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.chatToggleButton:hover {
+    background-color: var(--border-subtle);
+}
+
+.content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+/* Chat Panel */
+.chatPanel {
+    width: 0;
+    background-color: var(--bg-secondary);
+    border-left: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    position: relative;
+    z-index: 20;
+    height: 100%;
+}
+
+.chatOpen {
+    width: 360px;
+    /* Width of the side chat */
+}
+
+/* On mobile, chat panel might need to be an overlay or full screen */
+@media (max-width: 768px) {
+    .chatOpen {
+        width: 100%;
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+    }
+}
+
+.chatHeader {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.chatHeader h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.closeChatButton {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.closeChatButton:hover {
+    color: var(--text-primary);
+}
+
+.chatContentWrapper {
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+    /* Ensure no padding interferes with ThreadView's layout */
+}
+
+.chatBodyPlaceholder {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.emptyState {
+    text-align: center;
+    color: var(--text-tertiary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.emptyState p {
+    margin: 0;
+    line-height: 1.5;
+    font-size: 0.9rem;
+}

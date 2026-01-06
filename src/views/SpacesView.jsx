@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ServiceLayout from '../components/ServiceLayout';
+import ServiceLayout from '../layouts/ServiceLayout';
 import styles from './SpacesView.module.css';
 import {
     Tv,

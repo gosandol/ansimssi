@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 
 import ImagesSection from '../components/Thread/ImagesSection';
 import SourcesSection from '../components/Thread/SourcesSection';
-import SourcesCarousel from '../components/Thread/SourcesCarousel'; // New
+import AcademicSection from '../components/Thread/AcademicSection'; // New
+import SourcesCarousel from '../components/Thread/SourcesCarousel';
 import AnswerSection from '../components/Thread/AnswerSection';
 import RelatedQuestions from '../components/Thread/RelatedQuestions';
 import SearchBar from '../components/SearchBar';
@@ -16,6 +17,7 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
 
     const [sources, setSources] = useState([]);
     const [images, setImages] = useState([]);
+    const [academic, setAcademic] = useState([]); // New
     const [answer, setAnswer] = useState('');
     const [disclaimer, setDisclaimer] = useState('');
     const [related, setRelated] = useState([]);
@@ -68,6 +70,7 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
                 const data = await response.json();
                 setSources(data.sources || []);
                 setImages(data.images || []);
+                setAcademic(data.academic || []); // New
                 setAnswer(data.answer || "");
                 setDisclaimer(data.disclaimer || "");
                 setRelated(data.related_questions || []);
@@ -155,34 +158,10 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
                             </div>
                         )}
 
-                        {/* Images Tab */}
-                        {activeSection === 'images' && (
+                        {/* Academic Tab */}
+                        {activeSection === 'academic' && (
                             <div className={styles.tabContent}>
-                                <div className={styles.imageGrid}>
-                                    {images.map((img, i) => (
-                                        <a
-                                            key={i}
-                                            href={sources[i] ? (sources[i].url || sources[i].link) : '#'}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={styles.imageGridItem}
-                                        >
-                                            <img src={img} alt={`Result ${i}`} loading="lazy" />
-                                            <div className={styles.imageSourceLink}>
-                                                {/* Add Favicon */}
-                                                <img
-                                                    src={`https://www.google.com/s2/favicons?domain=${(() => {
-                                                        try { return new URL(sources[i]?.url || sources[i]?.link || 'http://google.com').hostname; } catch { return 'google.com'; }
-                                                    })()}`}
-                                                    alt="icon"
-                                                    className={styles.favicon}
-                                                    style={{ width: 16, height: 16, borderRadius: 2, marginRight: 6 }}
-                                                />
-                                                <span>{sources[i] ? new URL(sources[i].url || sources[i].link).hostname : 'Source'}</span>
-                                            </div>
-                                        </a>
-                                    ))}
-                                </div>
+                                <AcademicSection papers={academic} />
                             </div>
                         )}
                     </>

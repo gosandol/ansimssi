@@ -67,10 +67,15 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
 
             // 3. Merge (Local First, then Global unique)
             const seen = new Set(localSuggestions.map(s => s.query));
-            const uniqueGlobal = globalSuggestions.filter(s => !seen.has(s.query));
+            let finalGlobal = [];
+
+            // Contextual Logic: If dropUpMode (Follow-up), suppress generic web trends
+            if (!dropUpMode) {
+                finalGlobal = globalSuggestions.filter(s => !seen.has(s.query));
+            }
 
             // Limit total
-            const merged = [...localSuggestions, ...uniqueGlobal].slice(0, 8);
+            const merged = [...localSuggestions, ...finalGlobal].slice(0, 8);
 
             // Update again with full list (prevents flickering if identical)
             setSuggestions(merged);
@@ -78,7 +83,7 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
         };
 
         fetchSuggestions();
-    }, [debouncedQuery]);
+    }, [debouncedQuery, dropUpMode]); // Add dropUpMode dependency
 
     // Voice & Voice Chat Config
     const [isListening, setIsListening] = useState(false);
@@ -263,6 +268,9 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
     };
 
     const handleKeyDown = (e) => {
+        // Fix for Korean IME: Ignore Enter key during composition
+        if (e.nativeEvent.isComposing) return;
+
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             if (query.trim()) {
@@ -297,7 +305,7 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
 
                     {/* Suggestion Dropdown */}
                     {showSuggestions && (
-                        <div className={styles.suggestionMenu}>
+                        <div className={`${styles.suggestionMenu} ${dropUpMode ? styles.dropUp : ''}`}>
                             {suggestions.map((item, idx) => (
                                 <div
                                     key={idx}

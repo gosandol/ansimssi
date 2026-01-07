@@ -219,7 +219,13 @@ function App() {
             chatContent={SideChatComponent}
           />
         ) : viewState === 'telemedicine' ? (
-          <TelemedicineView />
+          <TelemedicineView
+            onBack={() => {
+              setViewState('mainApp');
+              window.history.pushState({}, '', '/');
+            }}
+            chatContent={SideChatComponent}
+          />
         ) : viewState === 'ansimFriends' ? (
           <AnsimFriendsView />
         ) : viewState === 'ansimTablet' ? (

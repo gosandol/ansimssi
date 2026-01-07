@@ -184,7 +184,7 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
             {/* Sticky Search Footer - Only in Answer Tab */}
             {activeSection === 'answer' && (
                 <div className={`${styles.stickySearchWrapper} ${isSideChat ? styles.sideChatSearch : ''}`}>
-                    <SearchBar onSearch={onSearch} placeholder="후속 질문하기" dropUpMode={true} />
+                    <SearchBar onSearch={handleFollowUp} placeholder="후속 질문하기" dropUpMode={true} />
                 </div>
             )}
         </div>

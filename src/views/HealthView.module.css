@@ -14,9 +14,24 @@
     }
 }
 
-/* 1. Vitals Card (Full Width) */
-.vitalsCard {
+/* 1. Telemedicine (Full Width) */
+.teleCard {
     grid-column: 1 / -1;
+    /* Ensure title area inherits color for SVG "currentColor" */
+    color: var(--text-primary);
+}
+
+/* Ensure the widget header aligns the SVG correctly */
+.teleCard :global(h2) {
+    /* Assuming WidgetCard uses h2 for title */
+    display: flex;
+    align-items: center;
+    color: var(--text-primary);
+}
+
+/* 2. Vitals Card (Half Width) */
+.vitalsCard {
+    /* Auto grid placement */
 }
 
 .vitalsGrid {
@@ -85,9 +100,7 @@
 }
 
 /* 2. Telemedicine & Meds (Half Width) */
-.teleCard {
-    /* Auto grid placement */
-}
+/* .teleCard styles moved up */
 
 .medCard {
     /* Auto grid placement */

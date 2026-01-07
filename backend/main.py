@@ -63,7 +63,34 @@ async def search(request: SearchRequest):
         print("Error: Gemini Model not initialized (Key missing?)")
         raise HTTPException(status_code=500, detail="Gemini Key missing")
 
+
     try:
+        # === 0. AFFIRMATIVE INTENT INTERCEPTOR (Sero Doctor) ===
+        # If the user says "Yes" or "Connect me" potentially in response to the Medical CTA
+        affirmative_keywords = ["네", "응", "어", "연결해줘", "비대면진료", "새로닥터", "상담할래", "진료받을래"]
+        cleaned_query = request.query.strip().replace(" ", "")
+        
+        # Simple Logic: exact match or containment of strong triggers
+        is_affirmative = (
+            cleaned_query in ["네", "예", "응", "어", "네부탁해요", "네연결해줘", "연결해줘"] or 
+            any(k in cleaned_query for k in ["비대면진료연결", "새로닥터연결", "상담연결"])
+        )
+
+        if is_affirmative:
+            print(f"[Intent] Sero Doctor Connection Triggered by: {request.query}")
+            return SearchResponse(
+                answer="""## 🏥 새로닥터 연결
+                
+네, 알겠습니다. **안심씨의 AI 주치의 서비스**를 통해 전문의와 상담하실 수 있도록 **새로닥터 비대면 진료**를 연결하겠습니다. 
+
+화면의 안내에 따라 증상을 선택하시면 곧바로 진료 접수가 진행됩니다. 잠시만 기다려주세요...""",
+                disclaimer="",
+                sources=[],
+                images=[],
+                academic=[],
+                related_questions=["비대면 진료는 어떻게 진행되나요?", "진료비는 얼마인가요?"]
+            )
+
         # 0. RAG: Check Medical Knowledge Base first
         rag_context = ""
         matched_topics = []
@@ -111,9 +138,13 @@ async def search(request: SearchRequest):
 
         **CORE OBJECTIVE**: Provide "Gemini-level" or "Expert-level" comprehensive answers. Your responses must be structured, detailed, and visually organized.
 
-        **CRISIS PROTOCOL (HIGHEST PRIORITY)**:
-           - IF the query implies **suicide, self-harm, or immediate life-threatening emergency**:
-             Output specific emergency guidance (119, 109, 1577-0199) and STOP.
+        **MEDICAL/HEALTH PROTOCOL (MANDATORY)**:
+           - IF the query is related to **Health, Symptoms, Diseases, or Treatment (Category: Health)**:
+             1. **Set `disclaimer_type` to "medical"**.
+             2. **Mandatory Closing**: You MUST end the response with one of the following:
+                - **Option A (Service Link)**: If the user seems to need professional help, append this EXACT message:
+                  > "안심씨는 여러분의 AI 주치의로서 **새로닥터**를 통해 비대면 진료 서비스를 제공하고 있습니다. 혹시 전문의와 상담이 필요하신가요? 필요하시다면 '네' 또는 '비대면진료를 연결해줘'라고 답해주세요."
+                - **Option B (Follow-up)**: Ask a specific, relevant health question to deepen understanding (e.g., "증상이 언제부터 시작되었나요?", "복용 중인 약이 있으신가요?").
 
         **ANSWER GUIDELINES**:
         1. **Context & Knowledge**: 
@@ -135,6 +166,7 @@ async def search(request: SearchRequest):
         4. **Adaptive Closing (Crucial for User Engagement)**:
            - **DO NOT** use a fixed "Final Recommendation" footer.
            - Instead, end the answer organically based on context:
+             - **Health/Medical**: USE THE MEDICAL PROTOCOL ABOVE.
              - **Adaptive Closing / Tips (Strict Branding)**:
                - **For Korean Answers**: You MUST use the label "**💡 꿀팁:**" (do not use "Honey Tip" in Korean output).
                - **For English Answers**: You MUST use the label "**💡 Honey Tip:**" (do not use "꿀팁" in English output).

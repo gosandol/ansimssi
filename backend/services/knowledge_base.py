@@ -1,6 +1,8 @@
 import os
 import json
 import difflib
+import uuid
+from datetime import datetime
 
 class KnowledgeBase:
     def __init__(self, data_file='data/knowledge_base.json'):
@@ -22,23 +24,35 @@ class KnowledgeBase:
             print(f"Error loading knowledge base: {e}")
             return []
 
+    def _extract_keywords(self, text):
+        """Simple keyword extraction (split by space)"""
+        if not text:
+            return []
+        # Basic tokenization: split by space and filter short words
+        return [w for w in text.split() if len(w) > 1]
+
     def save_interaction(self, query, response_data):
         """
         Save a successful interaction to the knowledge base.
         response_data should contain 'answer', 'sources', 'images'.
         """
         # Check if similar query already exists to avoid duplicates
-        # Simple exact match check for now, can be improved
         for item in self.data:
             if item['query'] == query:
-                return # Already exists, maybe update timestamp in future
+                return # Already exists
 
         entry = {
+            "id": str(uuid.uuid4()),
+            "category": "general", # Default, can be refined later
+            "keywords": self._extract_keywords(query),
             "query": query,
             "answer": response_data.get('answer', ''),
             "sources": response_data.get('sources', []),
             "images": response_data.get('images', []),
-            "timestamp": "2026-01-07" # In real app, use datetime
+            "related_questions": [],
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat(),
+            "timestamp": datetime.now().strftime("%Y-%m-%d") # Keep for backward compatibility
         }
         
         self.data.append(entry)
@@ -52,32 +66,55 @@ class KnowledgeBase:
 
     def find_match(self, query):
         """
-        Find a matching result in the knowledge base.
-        Returns the data object or None.
+        Find a matching result in the knowledge base using a scoring system.
+        Returns the best matching data object or None.
         """
         # Reload data to ensure freshness (Dev Mode optimization)
         self.data = self._load_data()
+        
+        if not self.data:
+            return None
 
-        # 1. Exact Match
+        query_keywords = set(self._extract_keywords(query))
+        best_score = 0
+        best_match = None
+
+        print(f"[KnowledgeBase] Searching for: {query}")
+
         for item in self.data:
-            if item['query'] == query:
+            score = 0
+            item_query = item['query']
+            
+            # 1. Exact Match (Highest Priority)
+            if item_query == query:
                 print(f"[KnowledgeBase] Exact match found for: {query}")
                 return item
-        
-        # 2. Fuzzy Match (Simple inclusion or strict similarity)
-        # Using difflib for similarity
-        best_ratio = 0.0
-        best_match = None
-        
-        for item in self.data:
-            ratio = difflib.SequenceMatcher(None, query, item['query']).ratio()
-            if ratio > 0.8: # High similarity threshold
-                if ratio > best_ratio:
-                    best_ratio = ratio
-                    best_match = item
-        
-        if best_match:
-            print(f"[KnowledgeBase] Fuzzy match ({best_ratio:.2f}) found: {best_match['query']}")
-            return best_match
+            
+            # 2. Keyword Intersection (Significant weight)
+            item_keywords = set(item.get('keywords', []))
+            # If keywords are missing in legacy data, extract on the fly
+            if not item_keywords:
+                item_keywords = set(self._extract_keywords(item_query))
+            
+            common_keywords = query_keywords.intersection(item_keywords)
+            score += len(common_keywords) * 10 
+            
+            # 3. Fuzzy Similarity (Tie-breaker and nuance)
+            ratio = difflib.SequenceMatcher(None, query, item_query).ratio()
+            score += ratio * 20 # Max 20 points for perfect string match
+            
+            # Thresholding
+            if score > best_score:
+                best_score = score
+                best_match = item
 
+        # Determine if the best match is good enough
+        # Minimum score requirement: e.g., at least one keyword match (10) or very high fuzzy (0.5 * 20 = 10)
+        THRESHOLD = 15 
+        
+        if best_match and best_score >= THRESHOLD:
+            print(f"[KnowledgeBase] Best match found (Score: {best_score:.2f}): {best_match['query']}")
+            return best_match
+        
+        print(f"[KnowledgeBase] No suitable match found. Best score was {best_score:.2f}")
         return None

@@ -186,7 +186,7 @@ function App() {
           <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
             "혈압이 높은 것 같아?"<br />"택배 언제 와?"<br />궁금한 점을 물어보세요.
           </div>
-          <SearchBar onSearch={handleSideSearch} placeholder="안심씨에게 질문하기..." />
+          <SearchBar onSearch={handleSideSearch} placeholder="우리집 AI 안심씨에게 무엇이든 물어보세요." />
         </div>
       )}
     </div>
@@ -341,7 +341,7 @@ function App() {
 
             <SearchBar
               onSearch={handleSearch}
-              placeholder="우리집 AI 주치의 겸 안전돌봄이 안심씨에게 무엇이든 물어보세요."
+              placeholder="우리집 AI 안심씨에게 무엇이든 물어보세요."
               shouldFocus={shouldFocusInput}
             />
 

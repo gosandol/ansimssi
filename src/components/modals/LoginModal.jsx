@@ -3,6 +3,7 @@ import { X, Mail } from 'lucide-react';
 import styles from './LoginModal.module.css';
 
 import { supabase } from '../../lib/supabaseClient';
+import AnsimssiLogo from '../AnsimssiLogo';
 
 const LoginModal = ({ onClose }) => {
 
@@ -29,12 +30,7 @@ const LoginModal = ({ onClose }) => {
 
                 <div className={styles.content}>
                     <div className={styles.iconArea}>
-                        {/* Perplexity/Ansimssi Logo Placeholder */}
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.logo}>
-                            <path d="M12 2L12 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            <path d="M3.33975 7L20.6603 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            <path d="M3.33975 17L20.6603 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
+                        <AnsimssiLogo size={48} className={styles.logo} />
                     </div>
 
                     <h2 className={styles.title}>검색 기록을<br />저장하려면 로그인하세요</h2>

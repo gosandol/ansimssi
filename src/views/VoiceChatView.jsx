@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Mic, MicOff, Volume2 } from 'lucide-react';
 import styles from './VoiceChatView.module.css';
+import { API_BASE_URL } from '../lib/api_config';
 
 const VoiceChatView = ({ isOpen, onClose }) => {
     const [status, setStatus] = useState('listening'); // listening, processing, speaking
@@ -69,7 +70,7 @@ const VoiceChatView = ({ isOpen, onClose }) => {
         setStatus('processing');
 
         try {
-            const response = await fetch('/api/search', {
+            const response = await fetch(`${API_BASE_URL}/api/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: query })

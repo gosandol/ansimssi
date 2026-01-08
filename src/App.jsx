@@ -16,6 +16,7 @@ import HealthView from './views/HealthView';
 import LifeView from './views/LifeView';
 import EntertainmentView from './views/EntertainmentView';
 import { Newspaper, HelpCircle, Code, Lightbulb, Activity, ShieldCheck, Sun } from 'lucide-react';
+import AnsimssiLogo from './components/AnsimssiLogo';
 
 /* Ideally move these to a CSS module, but keeping inline for quick restoration of previous state if no module existed for App specific home */
 /* Actually, let's use a simple inline style object or class if MainLayout.module.css covers it? */
@@ -298,39 +299,8 @@ function App() {
                 marginBottom: '0.5rem'
               }}>
                 {/* Ansimssi Chatbot Icon (Placeholder: MessageSquarePlus with Gradient) */}
-                <div style={{ position: 'relative', width: 24, height: 24 }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="logoGradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-                        <stop stopColor="#22d3ee" />
-                        <stop offset="0.5" stopColor="#818cf8" />
-                        <stop offset="1" stopColor="#c084fc" />
-                      </linearGradient>
-                    </defs>
-                    {/* MessageSquarePlus Icon Path mimicking Lucide */}
-                    <path
-                      d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-                      stroke="url(#logoGradient)"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M9 10h6"
-                      stroke="url(#logoGradient)"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M12 7v6"
-                      stroke="url(#logoGradient)"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
+                <AnsimssiLogo size={24} />
+
 
                 <h1 style={{
                   fontSize: '1.25rem',
@@ -390,9 +360,10 @@ function App() {
             </div>
 
 
-          </div>
-        )}
-      </MainLayout>
+          </div >
+        )
+        }
+      </MainLayout >
     </>
   );
 }

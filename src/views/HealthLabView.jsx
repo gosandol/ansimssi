@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, Bell, FileText, Stethoscope } from 'lucide-react';
 import styles from './HealthLabView.module.css';
+import { API_BASE_URL } from '../lib/api_config';
 
 const HealthLabView = () => {
     const [data, setData] = useState(null);
@@ -9,7 +10,7 @@ const HealthLabView = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('/api/health-data');
+                const response = await fetch(`${API_BASE_URL}/api/health-data`);
                 if (response.ok) {
                     const result = await response.json();
                     setData(result);

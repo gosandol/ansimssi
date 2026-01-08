@@ -4,6 +4,7 @@ import styles from './SearchBar.module.css';
 import VoiceChatView from '../views/VoiceChatView';
 import { isKoreanMatch } from '../lib/hangul';
 import { SMART_SUGGESTIONS } from '../lib/searchKeywords';
+import { API_BASE_URL } from '../lib/api_config';
 
 const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) => {
     const [query, setQuery] = useState('');
@@ -52,7 +53,7 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout
 
-                const res = await fetch(`/api/suggest?q=${encodeURIComponent(debouncedQuery)}`, {
+                const res = await fetch(`${API_BASE_URL}/api/suggest?q=${encodeURIComponent(debouncedQuery)}`, {
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);

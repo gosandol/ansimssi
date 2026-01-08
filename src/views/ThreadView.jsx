@@ -9,6 +9,7 @@ import RelatedQuestions from '../components/Thread/RelatedQuestions';
 import SearchBar from '../components/SearchBar';
 import { createThread, addMessage } from '../lib/db';
 import styles from './ThreadView.module.css';
+import { API_BASE_URL } from '../lib/api_config';
 
 const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiveSection, isSideChat = false }) => {
     // Mock Data Generation based on query
@@ -59,7 +60,7 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
             setDisclaimer('');
 
             try {
-                const response = await fetch('/api/search', {
+                const response = await fetch(`${API_BASE_URL}/api/search`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query: initialQuery })

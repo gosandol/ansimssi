@@ -335,6 +335,20 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                     </div>
                 </button>
 
+                {/* Admin Link - Conditionally Rendered (Access checked on page load) */}
+                {session && session.user && (
+                    <button
+                        className={styles.navItem}
+                        title="관리자 페이지"
+                        onClick={() => window.location.href = '/admin'}
+                    >
+                        <div className={styles.navContent}>
+                            <span className={styles.iconWrapper}><ShieldCheck size={20} color="#9ca3af" /></span>
+                            <span>관리자 페이지</span>
+                        </div>
+                    </button>
+                )}
+
                 {/* Location Info - Only visible when expanded */}
                 {!collapsed && (
                     <div className={styles.locationInfo}>

@@ -320,10 +320,13 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
 
             <div className={styles.bottomSection}>
                 {/* What's New */}
+                {/* What's New -> Notice Board */}
                 <button
                     className={styles.navItem}
-                    title="새로운 소식"
-                    onClick={() => alert("새로운 기능: 학술 탭, 날씨 날짜 수정, 홈 리셋 기능이 추가되었습니다!")}
+                    title="새로운 소식 (공지사항)"
+                    onClick={() => {
+                        if (onNewThread) onNewThread('notice');
+                    }}
                 >
                     <div className={styles.navContent}>
                         <span className={styles.iconWrapper}><Sparkles size={20} /></span>

@@ -4,8 +4,9 @@ import styles from './MoreView.module.css';
 
 const MoreView = ({ onBack, onSettingsClick }) => {
     const menuItems = [
-        { icon: <FileText size={24} />, label: '이용약관', desc: '서비스 이용 규정', action: () => { } },
-        { icon: <Shield size={24} />, label: '개인정보처리방침', desc: '소중한 정보 보호', action: () => { } },
+        // { icon: <FileText size={24} />, label: '이용약관', desc: '서비스 이용 규정', action: () => { } },
+        // { icon: <Shield size={24} />, label: '개인정보처리방침', desc: '소중한 정보 보호', action: () => { } },
+        // { icon: <Info size={24} />, label: '공지사항', desc: '새로운 소식', action: () => alert("준비 중입니다.") },
     ];
 
     return (

@@ -1,0 +1,254 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: flex-end;
+    /* Align to right? or center? Google is usually a popup below button */
+    padding: 1rem;
+    z-index: 1000;
+}
+
+/* For simplicity, let's make it a centered modal or positioned absolute if we can pass coordinates. 
+   User image shows a separated island modal. Let's center it for mobile-first feel or top-right.
+   Let's do top-right with margin */
+.menuContainer {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    width: 380px;
+    background-color: #202124;
+    /* Dark gray like Google Dark Mode */
+    color: #e8eaed;
+    border-radius: 28px;
+    box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.header {
+    position: relative;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-bottom: 1px solid #3c4043;
+}
+
+.closeButton {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    /* Use left for close, usually it's X on top left or right in this specific UI? Google often has X top left in these cards */
+    background: none;
+    border: none;
+    color: #e8eaed;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+}
+
+.closeButton:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.avatarWrapper {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.mainAvatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.fallbackAvatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #8ab4f8;
+    /* Google blue-ish */
+    color: #202124;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.cameraButton {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: #303134;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.greeting {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0.5rem 0;
+}
+
+.manageButton {
+    background-color: transparent;
+    border: 1px solid #5f6368;
+    color: #8ab4f8;
+    padding: 8px 24px;
+    border-radius: 100px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
+.manageButton:hover {
+    background-color: rgba(138, 180, 248, 0.08);
+    /* slight tint */
+}
+
+.accountsSection {
+    background-color: #171717;
+    /* Slightly darker */
+    flex: 1;
+}
+
+.accordionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #9aa0a6;
+}
+
+.accordionHeader:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.accountList {
+    padding-bottom: 10px;
+}
+
+.accountItem {
+    display: flex;
+    align-items: center;
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: background 0.2s;
+    position: relative;
+}
+
+.accountItem:hover {
+    background-color: #303134;
+}
+
+.itemAvatar {
+    width: 40px;
+    height: 40px;
+    margin-right: 14px;
+}
+
+.itemAvatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.itemInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.itemName {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #e8eaed;
+}
+
+.itemEmail {
+    font-size: 0.8rem;
+    color: #9aa0a6;
+}
+
+.activeBadge {
+    position: absolute;
+    right: 24px;
+    font-size: 0.75rem;
+    color: #8ab4f8;
+    border: 1px solid #8ab4f8;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.actionItem {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    color: #e8eaed;
+    cursor: pointer;
+    font-size: 0.95rem;
+    text-align: left;
+}
+
+.actionItem:hover {
+    background-color: #303134;
+}
+
+.actionIcon {
+    width: 40px;
+    display: flex;
+    justify-content: center;
+    margin-right: 14px;
+    color: #9aa0a6;
+}
+
+.footer {
+    padding: 16px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #9aa0a6;
+    background-color: #202124;
+    border-top: 1px solid #3c4043;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Menu, ArrowLeft, Share, Globe, Image, LogIn, User, BookOpen, GraduationCap, Link } from 'lucide-react';
 import styles from './GlobalHeader.module.css';
 import { supabase } from '../../lib/supabaseClient';
+import ProfileMenu from '../profile/ProfileMenu';
 
 const GlobalHeader = ({ onMenuClick, session, isThreadMode, onBackClick, activeSection, onNavigate, onLoginClick }) => {
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     // Thread Mode Header (Search Results) - Kept mostly same but ensures desktop visibility
     if (isThreadMode) {
@@ -113,15 +115,27 @@ const GlobalHeader = ({ onMenuClick, session, isThreadMode, onBackClick, activeS
 
             <div className={styles.rightSection}>
                 {session ? (
-                    <button className={styles.avatarButton} onClick={() => supabase.auth.signOut()} title="로그아웃">
-                        {session.user.user_metadata.avatar_url ? (
-                            <img src={session.user.user_metadata.avatar_url} alt="Profile" className={styles.avatarImg} />
-                        ) : (
-                            <div className={styles.avatarFallback}>
-                                {session.user.email[0].toUpperCase()}
-                            </div>
+                    <>
+                        <button
+                            className={styles.avatarButton}
+                            onClick={() => setShowProfileMenu(true)}
+                            title="계정 관리"
+                        >
+                            {session.user.user_metadata.avatar_url ? (
+                                <img src={session.user.user_metadata.avatar_url} alt="Profile" className={styles.avatarImg} />
+                            ) : (
+                                <div className={styles.avatarFallback}>
+                                    {session.user.email[0].toUpperCase()}
+                                </div>
+                            )}
+                        </button>
+                        {showProfileMenu && (
+                            <ProfileMenu
+                                session={session}
+                                onClose={() => setShowProfileMenu(false)}
+                            />
                         )}
-                    </button>
+                    </>
                 ) : (
                     <button className={styles.headerLoginBtn} onClick={onLoginClick}>
                         <LogIn size={18} />

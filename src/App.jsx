@@ -19,6 +19,9 @@ import { Newspaper, HelpCircle, Code, Lightbulb, Activity, ShieldCheck, Sun } fr
 import AnsimssiLogo from './components/AnsimssiLogo';
 import AdminView from './views/AdminView';
 import MoreView from './views/MoreView';
+import NoticeView from './views/NoticeView'; // Import NoticeView
+import TermsOfService from './views/legal/TermsOfService';
+import PrivacyPolicy from './views/legal/PrivacyPolicy';
 
 /* Ideally move these to a CSS module, but keeping inline for quick restoration of previous state if no module existed for App specific home */
 /* Actually, let's use a simple inline style object or class if MainLayout.module.css covers it? */
@@ -77,6 +80,9 @@ function App() {
       else if (path === '/ansim-friends') setViewState('ansimFriends');
       else if (path === '/ansim-tablet') setViewState('ansimTablet');
       else if (path === '/admin') setViewState('admin');
+      else if (path === '/terms') setViewState('terms');
+      else if (path === '/privacy') setViewState('privacy');
+      else if (path === '/notice') setViewState('notice'); // Add notice route
     };
 
     // Initial check
@@ -120,7 +126,7 @@ function App() {
   const handleNewThread = (type) => {
     // Add health, life, safety, learning, game, more to allowed views
     if (['healthLab', 'spaces', 'telemedicine', 'ansimFriends', 'ansimTablet',
-      'health', 'life', 'safety', 'learning', 'game', 'more'].includes(type)) {
+      'health', 'life', 'safety', 'learning', 'game', 'more', 'terms', 'privacy', 'notice'].includes(type)) {
       setViewState(type);
       setActiveQuery(null);
       // Map type to URL if desired
@@ -135,7 +141,10 @@ function App() {
         safety: '/safety',
         learning: '/learning',
         game: '/game',
-        more: '/more'
+        more: '/more',
+        terms: '/terms',
+        privacy: '/privacy',
+        notice: '/notice'
       };
       if (typeToUrl[type]) window.history.pushState({}, '', typeToUrl[type]);
 
@@ -289,6 +298,21 @@ function App() {
             }}
             onSettingsClick={() => setShowSettingsModal(true)}
           />
+        ) : viewState === 'terms' ? (
+          <TermsOfService onBack={() => {
+            setViewState('mainApp');
+            window.history.pushState({}, '', '/');
+          }} />
+        ) : viewState === 'privacy' ? (
+          <PrivacyPolicy onBack={() => {
+            setViewState('mainApp');
+            window.history.pushState({}, '', '/');
+          }} />
+        ) : viewState === 'notice' ? (
+          <NoticeView onBack={() => {
+            setViewState('mainApp');
+            window.history.pushState({}, '', '/');
+          }} />
         ) : activeQuery ? (
           <ThreadView
             initialQuery={activeQuery}

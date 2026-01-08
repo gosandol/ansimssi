@@ -14,10 +14,27 @@ const AdminView = ({ onBack }) => {
     }, []);
 
     const checkAdmin = async () => {
-        // EMERGENCY BYPASS: Always allow access to let user fix their permissions
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            window.location.href = '/'; // Redirect if not logged in
+            return;
+        }
+
+        // Check is_admin column in profiles
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', user.id)
+            .single();
+
+        if (error || !data || !data.is_admin) {
+            alert("관리자 권한이 없습니다.");
+            window.location.href = '/';
+            return;
+        }
+
         setIsAdmin(true);
         setLoading(false);
-        return;
     };
 
     if (loading) return (

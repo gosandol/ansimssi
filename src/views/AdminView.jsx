@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { ShieldAlert, LayoutDashboard, Users, MessageSquare, Settings, LogOut } from 'lucide-react';
 import PromptEditor from '../components/admin/PromptEditor';
+import UserManagement from '../components/admin/UserManagement';
 
 const AdminView = ({ onBack }) => {
     const [loading, setLoading] = useState(true);
@@ -109,7 +110,7 @@ const AdminView = ({ onBack }) => {
                 <main style={{ padding: '2rem' }}>
                     {activeTab === 'dashboard' && <DashboardPlaceholder />}
                     {activeTab === 'ai_ops' && <div style={{ padding: '0rem' }}><PromptEditor /></div>}
-                    {activeTab === 'users' && <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>준비 중입니다...</div>}
+                    {activeTab === 'users' && <div style={{ padding: '0rem' }}><UserManagement /></div>}
                     {activeTab === 'settings' && <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>준비 중입니다...</div>}
                 </main>
             </div>

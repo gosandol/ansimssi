@@ -4,10 +4,6 @@ import styles from './MoreView.module.css';
 
 const MoreView = ({ onBack, onSettingsClick }) => {
     const menuItems = [
-        { icon: <Bell size={24} />, label: '공지사항', desc: '새로운 소식 확인', action: () => alert('준비 중입니다.') },
-        { icon: <MessageCircle size={24} />, label: '고객센터', desc: '1:1 문의 및 FAQ', action: () => alert('준비 중입니다.') },
-        { icon: <Settings size={24} />, label: '앱 설정', desc: '화면, 알림 설정', action: onSettingsClick },
-        { icon: <Info size={24} />, label: '서비스 소개', desc: '안심씨 알아보기', action: () => window.open('https://ansimssi.kr', '_blank') },
         { icon: <FileText size={24} />, label: '이용약관', desc: '서비스 이용 규정', action: () => { } },
         { icon: <Shield size={24} />, label: '개인정보처리방침', desc: '소중한 정보 보호', action: () => { } },
     ];

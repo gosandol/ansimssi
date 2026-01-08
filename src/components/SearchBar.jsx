@@ -328,14 +328,14 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
 
                 <div className={styles.actionBar}>
                     <div className={styles.leftActions}>
-                        <button className={styles.actionButton} title="Attach">
+                        <button className={`${styles.actionButton} ${styles.hasTooltip}`} data-tooltip="첨부">
                             <Paperclip size={18} />
                             <span className={styles.actionText}>첨부</span>
                         </button>
                         <div className={styles.focusWrapper}>
                             <button
-                                className={`${styles.actionButton} ${isFocusOpen ? styles.active : ''}`}
-                                title="Focus"
+                                className={`${styles.actionButton} ${isFocusOpen ? styles.active : ''} ${styles.hasTooltip}`}
+                                data-tooltip="검색"
                                 onClick={() => setIsFocusOpen(!isFocusOpen)}
                             >
                                 <Search size={18} />
@@ -414,9 +414,9 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                             </button>
                         ) : (
                             <button
-                                className={`${styles.actionButton} ${isListening ? styles.listening : ''}`}
+                                className={`${styles.actionButton} ${isListening ? styles.listening : ''} ${styles.hasTooltip}`}
                                 onClick={toggleListening}
-                                title="음성 입력"
+                                data-tooltip="음성 입력"
                             >
                                 <Mic size={20} color={isListening ? "#f55" : "currentColor"} />
                             </button>
@@ -424,9 +424,9 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
 
                         {/* 2. Voice Chat Mode - Gemini Style */}
                         <button
-                            className={styles.submitButton}
+                            className={`${styles.submitButton} ${styles.hasTooltip}`}
                             onClick={() => setShowVoiceChat(true)}
-                            title="AI 음성 대화"
+                            data-tooltip="음성 대화"
                             style={{
                                 background: 'linear-gradient(135deg, #4285f4 0%, #9b72cb 50%, #d96570 100%)',
                                 color: 'white',

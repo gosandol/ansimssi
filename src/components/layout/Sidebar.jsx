@@ -79,6 +79,26 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
         }
     }, [session]);
 
+    // Admin Check Logic
+    const [isAdmin, setIsAdmin] = React.useState(false);
+
+    React.useEffect(() => {
+        if (session && session.user) {
+            import('../../lib/supabaseClient').then(({ supabase }) => {
+                supabase
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', session.user.id)
+                    .single()
+                    .then(({ data }) => {
+                        if (data && data.is_admin) {
+                            setIsAdmin(true);
+                        }
+                    });
+            });
+        }
+    }, [session]);
+
     const menuItems = [
         {
             id: 'mainApp',
@@ -335,26 +355,7 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                     </div>
                 </button>
 
-                const [isAdmin, setIsAdmin] = React.useState(false);
 
-    React.useEffect(() => {
-        if (session && session.user) {
-                    import('../../lib/supabaseClient').then(({ supabase }) => {
-                        supabase
-                            .from('profiles')
-                            .select('is_admin')
-                            .eq('id', session.user.id)
-                            .single()
-                            .then(({ data }) => {
-                                if (data && data.is_admin) {
-                                    setIsAdmin(true);
-                                }
-                            });
-                    });
-        }
-    }, [session]);
-
-                // ... (rest of render)
 
                 {/* Admin Link - Conditionally Rendered (Access checked on page load) */}
                 {isAdmin && (

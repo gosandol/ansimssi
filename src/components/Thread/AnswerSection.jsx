@@ -99,7 +99,11 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
                 return (
                     <>
                         <div className={`${styles.answerContent} ${styles.markdownBody}`}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{mainBody}</ReactMarkdown>
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                            >
+                                {mainBody}
+                            </ReactMarkdown>
                         </div>
 
                         {recommendation && (

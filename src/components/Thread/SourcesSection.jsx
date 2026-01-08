@@ -24,7 +24,14 @@ const SourcesSection = ({ sources }) => {
                     const badge = getTrustBadge(domain);
 
                     return (
-                        <a key={index} href={source.url || source.link} target="_blank" rel="noopener noreferrer" className={styles.sourceDetailedCard}>
+                        <a
+                            key={index}
+                            href={source.url || source.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`${styles.sourceDetailedCard} ${source.isSolution ? styles.solutionCard : ''}`}
+                            style={source.isSolution ? { borderColor: 'var(--accent-primary)', backgroundColor: 'rgba(34, 211, 238, 0.05)' } : {}}
+                        >
                             <div className={styles.cardHeader}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
                                     <img
@@ -35,7 +42,13 @@ const SourcesSection = ({ sources }) => {
                                     />
                                     <span className={styles.cardDomain}>{domain}</span>
                                 </div>
-                                {badge && (
+                                {/* Priority Badge for Solutions */}
+                                {source.isSolution && (
+                                    <span className={styles.trustBadge} style={{ backgroundColor: 'var(--accent-primary)', color: 'white', borderColor: 'transparent' }}>
+                                        🎯 추천 솔루션
+                                    </span>
+                                )}
+                                {!source.isSolution && badge && (
                                     <span className={styles.trustBadge} data-type={badge.type}>
                                         {badge.icon} {badge.label}
                                     </span>

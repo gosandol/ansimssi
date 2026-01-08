@@ -17,6 +17,7 @@ import LifeView from './views/LifeView';
 import EntertainmentView from './views/EntertainmentView';
 import { Newspaper, HelpCircle, Code, Lightbulb, Activity, ShieldCheck, Sun } from 'lucide-react';
 import AnsimssiLogo from './components/AnsimssiLogo';
+import AdminView from './views/AdminView';
 
 /* Ideally move these to a CSS module, but keeping inline for quick restoration of previous state if no module existed for App specific home */
 /* Actually, let's use a simple inline style object or class if MainLayout.module.css covers it? */
@@ -74,6 +75,7 @@ function App() {
       else if (path === '/telemedicine') setViewState('telemedicine');
       else if (path === '/ansim-friends') setViewState('ansimFriends');
       else if (path === '/ansim-tablet') setViewState('ansimTablet');
+      else if (path === '/admin') setViewState('admin');
     };
 
     // Initial check
@@ -273,6 +275,11 @@ function App() {
             }}
             chatContent={SideChatComponent}
           />
+        ) : viewState === 'admin' ? (
+          <AdminView onBack={() => {
+            setViewState('mainApp');
+            window.history.pushState({}, '', '/');
+          }} />
         ) : activeQuery ? (
           <ThreadView
             initialQuery={activeQuery}

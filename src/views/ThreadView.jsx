@@ -152,10 +152,36 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
                             </>
                         )}
 
-                        {/* Sources Tab */}
+                        {/* Sources Tab -> Links (Solutions) */}
                         {activeSection === 'sources' && (
                             <div className={styles.tabContent}>
-                                <SourcesSection sources={sources} />
+                                {/* Show links extracted from the answer first (The "Solutions") */}
+                                <SourcesSection
+                                    sources={(() => {
+                                        // 1. Extract links from the answer in real-time
+                                        const mdLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+                                        const extractedLinks = [];
+                                        let match;
+                                        if (answer) {
+                                            const activeAnswer = typeof answer === 'string' ? answer : "";
+                                            while ((match = mdLinkRegex.exec(activeAnswer)) !== null) {
+                                                extractedLinks.push({
+                                                    title: match[1],
+                                                    url: match[2],
+                                                    content: "답변에서 언급된 추천 솔루션입니다.",
+                                                    isSolution: true // Flag to highlight
+                                                });
+                                            }
+                                        }
+
+                                        // 2. Combine with search sources (Deduplicate based on URL)
+                                        const uniqueUrls = new Set(extractedLinks.map(l => l.url));
+                                        const filteredSources = sources.filter(s => !uniqueUrls.has(s.url && s.link));
+
+                                        // 3. Return combined list (Solutions first)
+                                        return [...extractedLinks, ...filteredSources];
+                                    })()}
+                                />
                             </div>
                         )}
 

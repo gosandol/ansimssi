@@ -5,3 +5,4 @@ google-generativeai
 tavily-python
 requests
 pydantic
+supabase

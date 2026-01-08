@@ -61,11 +61,11 @@ class SearchManager:
                     "year": "2025"
                 },
                 {
-                    "title": f"analysis of {query} in Korean Population", 
+                    "title": f"Analysis of {query} in Korean Population",
                     "link": "#",
                     "snippet": "Comprehensive survey data regarding patient outcomes...",
                     "publication_info": "Journal of Korean Medical Science - 2024",
-                    "year": "2024"  
+                    "year": "2024"
                 }
             ]
             

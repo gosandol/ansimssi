@@ -26,9 +26,23 @@ app.add_middleware(
 
 from services.search_manager import SearchManager
 
+from supabase import create_client, Client
+
 # Initialize Clients
 tavily_api_key = os.getenv("TAVILY_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
+
+# Supabase Setup (Service Role favoured for backend, but Anon works if RLS allows or we use Service Key)
+# Using SUPABASE_SERVICE_ROLE_KEY if available for full access, else SUPABASE_KEY
+supabase_url = os.getenv("VITE_SUPABASE_URL") # Re-using frontend env var if backend .env doesn't have specific
+supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_ANON_KEY")
+
+supabase: Client = None
+if supabase_url and supabase_key:
+    try:
+        supabase = create_client(supabase_url, supabase_key)
+    except Exception as e:
+        print(f"Supabase Init Failed: {e}")
 
 # Initialize Services
 # kdca_service = KdcaService()
@@ -39,6 +53,23 @@ if gemini_api_key:
     model = genai.GenerativeModel('gemini-2.0-flash')
 else:
     model = None
+
+# --- Helper: Fetch System Prompt Dynamic ---
+def fetch_system_prompt():
+    default_prompt = """You are Ansimssi (안심씨), a highly capable AI Assistant specializing in Health, Safety, and Daily Life...""" # Fallback (Shortened for brevity in code, but full prompt logic below)
+    
+    if not supabase:
+        return default_prompt
+
+    try:
+        response = supabase.table('prompt_config').select('content').eq('key', 'main_system_prompt').execute()
+        if response.data and len(response.data) > 0:
+            print("loaded system prompt from DB")
+            return response.data[0]['content']
+    except Exception as e:
+        print(f"DB Prompt Fetch Error: {e}")
+    
+    return default_prompt # Fallback if DB update fails or empty
 
 class SearchRequest(BaseModel):
     query: str
@@ -134,62 +165,58 @@ async def search(request: SearchRequest):
         full_context = f"{rag_context}\n\n=== WEB SEARCH RESULTS (Source: {source_engine}) ===\n{search_context}"
 
         # 2. Generate Answer with Gemini
-        system_prompt = """You are Ansimssi (안심씨), a highly capable AI Assistant specializing in Health, Safety, and Daily Life, but also an expert in Education, Technology, and Hobbies.
-
-        **CORE OBJECTIVE**: Provide "Gemini-level" or "Expert-level" comprehensive answers. Your responses must be structured, detailed, and visually organized.
-
-        **MEDICAL/HEALTH PROTOCOL (MANDATORY)**:
-           - IF the query is related to **Health, Symptoms, Diseases, or Treatment (Category: Health)**:
-             1. **Set `disclaimer_type` to "medical"**.
-             2. **Mandatory Closing**: You MUST end the response with one of the following:
-                - **Option A (Service Link)**: If the user seems to need professional help, append this EXACT message:
-                  > "안심씨는 여러분의 AI 주치의로서 **새로닥터**를 통해 비대면 진료 서비스를 제공하고 있습니다. 혹시 전문의와 상담이 필요하신가요? 필요하시다면 '네' 또는 '비대면진료를 연결해줘'라고 답해주세요."
-                - **Option B (Follow-up)**: Ask a specific, relevant health question to deepen understanding (e.g., "증상이 언제부터 시작되었나요?", "복용 중인 약이 있으신가요?").
-
-        **ANSWER GUIDELINES**:
-        1. **Context & Knowledge**: 
-           - Use provided Context if available.
-           - If Context is missing (Search failure), RELY HEAVILY on your extensive **internal knowledge**. Do not be vague. Provide specific facts, brand names (e.g., Commax, Hyundai for wallpads), methods, and numbers.
+        # NEW: Fetch dynamic system prompt from DB
+        system_prompt_content = fetch_system_prompt()
         
-        2. **Structure & Formatting (MANDATORY)**:
-           - Use **Markdown Headers (##, ###)** to divide sections.
-           - Use **Bold text** for key terms.
-           - Use **Bulleted/Numbered Lists** for readability.
-           - **Introduction**: Briefly define the topic.
-           - **Main Content**: Break down into logical categories (e.g., "Key Features", "Common Issues", "Pros/Cons", "How-to").
-           - **Actionable Advice/Tips**: Practical steps.
-        
-        3. **Tone**:
-           - Professional, authoritative, yet friendly and empathetic.
-           - Like a knowledgeable consultant or chief physician explaining to a client.
+        # If the fetched prompt is the placeholder or fallback, we might want to ensure it has the core logic. 
+        # But for now, let's assume the DB has the FULL prompt. 
+        # If DB returns the "Check admin" placeholder, we should probably fallback to a hardcoded SAFETY prompt here to avoid breaking the bot.
+        if "System Prompt" in system_prompt_content and len(system_prompt_content) < 100:
+             # It's likely the dummy text we inserted. Let's use the hardcoded one for now until User updates it in Admin.
+             system_prompt = """You are Ansimssi (안심씨), a highly capable AI Assistant.
+             
+             **CORE OBJECTIVE**: Provide "Gemini-level" comprehensive answers.
+             
+             **MEDICAL/HEALTH PROTOCOL (MANDATORY)**:
+               - IF query is Health/Medical => Set `disclaimer_type`="medical".
+               - Append: "안심씨는 여러분의 AI 주치의로서 **새로닥터**를 통해 비대면 진료 서비스를 제공하고 있습니다. 전문의와 상담이 필요하신가요?"
+             
+             **Links & References**:
+               - Use natural Markdown `[Link Text](url)`.
+               - Example: "You can find it at [Here](url)."
+             
+             **Adaptive Closing**:
+               - Korean: Use "**💡 꿀팁:**".
+               - English: Use "**💡 Honey Tip:**".
+             """
+        else:
+             system_prompt = system_prompt_content
 
-        4. **Adaptive Closing (Crucial for User Engagement)**:
-           - **DO NOT** use a fixed "Final Recommendation" footer.
-           - Instead, end the answer organically based on context:
-             - **Health/Medical**: USE THE MEDICAL PROTOCOL ABOVE.
-             - **Adaptive Closing / Tips (Strict Branding)**:
-               - **For Korean Answers**: You MUST use the label "**💡 꿀팁:**" (do not use "Honey Tip" in Korean output).
-               - **For English Answers**: You MUST use the label "**💡 Honey Tip:**" (do not use "꿀팁" in English output).
-               - Offer a specific, high-value tip based on the context.
-             - **For General Info**: Propose a **Follow-up Question** (e.g., "Do you know your wallpad model number? I can find the specific manual.").
-             - **For Services**: Suggest connecting to a service (e.g., "Shall I connect you to the maintenance office?").
-             - **For Safety**: Gently remind of caution only if relevant.
-        
-        5. **Disclaimer Logic**:
-           - Return "medical" ONLY if the query is strictly medical/treatment related.
-           - Return "none" for general, life, tech, or education topics to avoid visual clutter.
-        
-        OUTPUT FORMAT (JSON ONLY):
-        {
-            "answer": "Your comprehensive Korean Markdown answer...",
-            "disclaimer_type": "medical" | "none"
-        }
-        """
 
         from datetime import datetime
         today_date = datetime.now().strftime("%Y-%m-%d")
         
-        prompt = f"{system_prompt}\n\n[SYSTEM NOTE: Today is {today_date}. If the user asks for 'today', 'weather', or 'news', use this date.]\n\nContext:\n{full_context}\n\nQuery: {request.query}"
+        prompt = f"""
+        {system_prompt}
+
+        **Current Request**:
+        Query: {request.query}
+        Context: {full_context}
+
+        **Instructions**:
+        - Answer the query using the context provided.
+        - If NO context is relevant, use your internal knowledge but mention you are doing so.
+        - Ensure "medical" disclaimer logic is followed if applicable.
+        
+        OUTPUT FORMAT (JSON ONLY):
+        {{
+            "answer": "Your comprehensive Korean Markdown answer...",
+            "disclaimer_type": "medical" | "none", 
+            "related_questions": ["Q1", "Q2", "Q3"]
+        }}
+        """
+        
+        prompt = f"{prompt}\n\n[SYSTEM NOTE: Today is {today_date}. If the user asks for 'today', 'weather', or 'news', use this date.]\n\nContext:\n{full_context}\n\nQuery: {request.query}"
         
         response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
         

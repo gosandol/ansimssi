@@ -1191,5 +1191,47 @@
     "created_at": "2026-01-07T15:53:04.538609",
     "updated_at": "2026-01-07T15:53:04.538636",
     "timestamp": "2026-01-07"
+  },
+  {
+    "id": "26281dca-e99a-4e03-b361-dc02377e75e3",
+    "category": "general",
+    "keywords": [
+      "Test",
+      "PDF"
+    ],
+    "query": "Test PDF",
+    "answer": "The search results indicate that you're looking for test PDF files. These are often used to verify if your system can properly open and display PDF documents. The provided sources include sample PDF files and pages designed for testing purposes.",
+    "sources": [
+      {
+        "title": "PDF 테스트파일입니다",
+        "url": "https://ee.kaist.ac.kr/wp-content/uploads/2023/06/test_file.pdf",
+        "content": "Page 1. PDF 테스트파일입니다."
+      },
+      {
+        "title": "PDF Test Page",
+        "url": "https://www.orimi.com/pdf-test.pdf",
+        "content": "You should be able to view any of the PDF documents and forms available on our site. PDF forms are indicated by these icons: or . Yukon Department of Education."
+      },
+      {
+        "title": "테스트 pdf입니다.",
+        "url": "https://www.msu.ac.kr/download/BOARD_ATTACH?storageNo=17710",
+        "content": "Page 1. 테스트 pdf입니다."
+      },
+      {
+        "title": "테스트용 샘플자료-PDF게시판",
+        "url": "https://www.hecto.kr/bbs/board.php?bo_table=pdf&wr_id=9&sca=%EB%B6%84%EB%A5%981&sst=wr_hit&sod=asc&sop=and&page=1",
+        "content": "< 1 Page >본 PDF는 샘플 페이지입니다. 아무나 쓰셔도 됩니다. PDF 테스트 등을 위해 만들었습니다.본 PDF는 샘플 페이지입니다."
+      },
+      {
+        "title": "Test Page",
+        "url": "https://www.cte.iup.edu/cte/Resources/PDF_TestPage.pdf",
+        "content": "Test Page. This is a Portable Document File (PDF). Commonly associated with Adobe Acrobat Reader. If you are able to read this PDF file, software is installed ..."
+      }
+    ],
+    "images": [],
+    "related_questions": [],
+    "created_at": "2026-01-08T19:16:07.139760",
+    "updated_at": "2026-01-08T19:16:07.139785",
+    "timestamp": "2026-01-08"
   }
 ]

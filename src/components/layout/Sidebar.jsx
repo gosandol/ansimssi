@@ -335,15 +335,36 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                     </div>
                 </button>
 
+                const [isAdmin, setIsAdmin] = React.useState(false);
+
+    React.useEffect(() => {
+        if (session && session.user) {
+                    import('../../lib/supabaseClient').then(({ supabase }) => {
+                        supabase
+                            .from('profiles')
+                            .select('is_admin')
+                            .eq('id', session.user.id)
+                            .single()
+                            .then(({ data }) => {
+                                if (data && data.is_admin) {
+                                    setIsAdmin(true);
+                                }
+                            });
+                    });
+        }
+    }, [session]);
+
+                // ... (rest of render)
+
                 {/* Admin Link - Conditionally Rendered (Access checked on page load) */}
-                {session && session.user && (
+                {isAdmin && (
                     <button
                         className={styles.navItem}
                         title="관리자 페이지"
                         onClick={() => window.location.href = '/admin'}
                     >
                         <div className={styles.navContent}>
-                            <span className={styles.iconWrapper}><ShieldCheck size={20} color="#9ca3af" /></span>
+                            <span className={styles.iconWrapper}><ShieldCheck size={20} color="#ef4444" /></span>
                             <span>관리자 페이지</span>
                         </div>
                     </button>

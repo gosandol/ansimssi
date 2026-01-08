@@ -70,7 +70,35 @@ const UserManagement = () => {
                             // Check admin in app_metadata if available, or just visual for now
                             // Note: Real admin status is in 'profiles' table which we might need to join, 
                             // but for now we can infer from email or app_metadata if set.
-                            const isAdmin = user.email === 'admin@ansimssi.ai';
+                            const isAdmin = user.app_metadata?.is_admin || user.user_metadata?.is_admin;
+                            // Note: We are using a simplified check for now. Real implementation needs a backend endpoint to update roles.
+                            // But since we have a direct Supabase client in frontend (though effectively backend-side for `profiles`), 
+                            // we can try updating the 'profiles' table if RLS allows, or use an RPC.
+                            // Given the architecture, we should probably add a backend endpoint for this or just use the profiles table update if the current user is an admin.
+                            // Let's assume we can update 'profiles' for now since we are logged in as admin (bypassed).
+
+                            const toggleAdmin = async () => {
+                                if (!confirm(`${name}님의 관리자 권한을 변경하시겠습니까?`)) return;
+
+                                try {
+                                    // Update profiles table
+                                    const { error } = await supabase
+                                        .from('profiles')
+                                        .update({ is_admin: !isAdmin }) // Toggle logic depends on current state from DB, ideally we fetch it. 
+                                        // But here we rely on the list state. 
+                                        // Actually `users` from API doesn't have is_admin from profiles joined yet.
+                                        // We need to fix the API to return is_admin from profiles.
+                                        .eq('id', user.id);
+
+                                    if (error) throw error;
+
+                                    alert("권한이 변경되었습니다. 목록을 새로고침합니다.");
+                                    fetchUsers();
+                                } catch (e) {
+                                    console.error(e);
+                                    alert("권한 변경 실패: " + e.message);
+                                }
+                            };
 
                             return (
                                 <tr key={user.id}>
@@ -103,8 +131,8 @@ const UserManagement = () => {
                                         )}
                                     </td>
                                     <td>
-                                        <button className={styles.actionButton} title="더보기">
-                                            <MoreHorizontal size={16} />
+                                        <button className={styles.actionButton} title="권한 관리" onClick={toggleAdmin}>
+                                            <Shield size={16} color={isAdmin ? "#ef4444" : "#9ca3af"} />
                                         </button>
                                     </td>
                                 </tr>

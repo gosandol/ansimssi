@@ -18,6 +18,7 @@ import EntertainmentView from './views/EntertainmentView';
 import { Newspaper, HelpCircle, Code, Lightbulb, Activity, ShieldCheck, Sun } from 'lucide-react';
 import AnsimssiLogo from './components/AnsimssiLogo';
 import AdminView from './views/AdminView';
+import MoreView from './views/MoreView';
 
 /* Ideally move these to a CSS module, but keeping inline for quick restoration of previous state if no module existed for App specific home */
 /* Actually, let's use a simple inline style object or class if MainLayout.module.css covers it? */
@@ -280,6 +281,14 @@ function App() {
             setViewState('mainApp');
             window.history.pushState({}, '', '/');
           }} />
+        ) : viewState === 'more' ? (
+          <MoreView
+            onBack={() => {
+              setViewState('mainApp');
+              window.history.pushState({}, '', '/');
+            }}
+            onSettingsClick={() => setShowSettingsModal(true)}
+          />
         ) : activeQuery ? (
           <ThreadView
             initialQuery={activeQuery}

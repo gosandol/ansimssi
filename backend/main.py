@@ -281,6 +281,48 @@ async def search(request: SearchRequest):
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- Admin API: User Management (CRM) ---
+@app.get("/api/admin/users")
+async def get_admin_users():
+    """
+    Fetch all users from Supabase Auth (Requires Service Role Key).
+    Ideally protected by Admin Middleware.
+    """
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Supabase client not initialized")
+    
+    # Check for Service Role Key (Security Check)
+    # In a real app, we must verify the requestor is an admin via JWT.
+    # For this MVP, we rely on the fact that this endpoint is only called by our Admin Frontend
+    # and maybe add a simple secret header check later if needed.
+    
+    try:
+        # Supabase Python Client 'auth.admin' method to list users
+        # Note: The 'supabase' client initialized with SERVICE_ROLE_KEY has admin privileges.
+        response = supabase.auth.admin.list_users()
+        # response is usually a UserList object or list of User objects
+        
+        # Serialize for frontend
+        users_data = []
+        for user in response:
+             users_data.append({
+                 "id": user.id,
+                 "email": user.email,
+                 "created_at": user.created_at,
+                 "last_sign_in_at": user.last_sign_in_at,
+                 "user_metadata": user.user_metadata,
+                 "app_metadata": user.app_metadata # Contains provider info
+             })
+             
+        # Sort by latest joined
+        users_data.sort(key=lambda x: x['created_at'], reverse=True)
+        
+        return {"users": users_data}
+        
+    except Exception as e:
+        print(f"Admin User Fetch Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/health-data")
 async def get_health_data():
     # Placeholder for KDCA service

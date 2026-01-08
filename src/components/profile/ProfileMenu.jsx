@@ -45,7 +45,7 @@ const ProfileMenu = ({ session, onClose }) => {
                             안녕하세요, {session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0]}님.
                         </h2>
                         <button className={styles.manageButton}>
-                            안심씨 계정 관리
+                            안심씨 계정 설정
                         </button>
                     </div>
                 </div>

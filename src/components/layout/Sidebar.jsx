@@ -358,7 +358,8 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
 
 
                 {/* Admin Link - Conditionally Rendered (Access checked on page load) */}
-                {isAdmin && (
+                {/* TEMP BYPASS: Show to all logged-in users so they can use the now-working User List to promote themselves */}
+                {session && session.user && (
                     <button
                         className={styles.navItem}
                         title="관리자 페이지"

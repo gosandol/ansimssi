@@ -323,42 +323,6 @@ async def get_admin_users():
         print(f"Admin User Fetch Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-class PromoteRequest(BaseModel):
-    email: str
-
-@app.post("/api/admin/promote")
-async def promote_user(request: PromoteRequest):
-    """
-    Promote a user to Admin by Email (Server-Side using Service Role Key).
-    """
-    if not supabase:
-        raise HTTPException(status_code=500, detail="Supabase client not initialized")
-    
-    try:
-        # 1. Find User ID from Auth (since profiles table uses ID, not email)
-        # Note: listing all users is inefficient but fine for this scale (< 1000 users)
-        all_users = supabase.auth.admin.list_users()
-        target_user_id = None
-        
-        for user in all_users:
-            if user.email == request.email:
-                target_user_id = user.id
-                break
-        
-        if not target_user_id:
-             raise HTTPException(status_code=404, detail="User not found in Auth")
-
-        # 2. Update Profiles Table (Bypassing RLS via Service Role Key)
-        # Check if profile exists first? Upsert is safer.
-        data = {"id": target_user_id, "is_admin": True}
-        response = supabase.table("profiles").upsert(data).execute()
-        
-        return {"status": "success", "message": f"User {request.email} promoted to Admin", "data": response.data}
-
-    except Exception as e:
-        print(f"Promotion Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/api/health-data")
 async def get_health_data():
     # Placeholder for KDCA service

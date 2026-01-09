@@ -161,13 +161,20 @@ class SearchRequest(BaseModel):
 
 @app.post("/api/search")
 async def search(request: SearchRequest):
+    # 1. Check Model Availability with Clear Error
     if not model:
-        raise HTTPException(status_code=500, detail="Gemini Key missing")
+        print("CRITICAL: Gemini Model not initialized.")
+        # Return a stream that immediately says error
+        async def error_generator():
+            yield json.dumps({
+                "type": "error", 
+                "message": "서버 설정 오류: GEMINI_API_KEY가 설정되지 않았습니다. Vercel 환경변수를 확인해주세요."
+            }) + "\n"
+        return StreamingResponse(error_generator(), media_type="application/x-ndjson")
 
     async def event_generator():
         try:
-            # 0. Affirmative Check
-            if any(k in request.query.replace(" ", "") for k in ["네연결해줘", "비대면진료", "새로닥터"]):
+            # === 0. AFFIRMATIVE INTENT INTERCEPTOR (Sero Doctor) ===           if any(k in request.query.replace(" ", "") for k in ["네연결해줘", "비대면진료", "새로닥터"]):
                 yield json.dumps({"type": "content", "delta": "네, 새로닥터 비대면 진료를 연결해드리겠습니다."}) + "\n"
                 yield json.dumps({"type": "done", "related_questions": []}) + "\n"
                 return
@@ -245,6 +252,19 @@ async def get_suggestions(q: str):
             return [{"query": t, "label": t, "type": "search"} for t in data[1][:6]]
     except: pass
     return []
+
+@app.get("/api/debug")
+def debug_env():
+    return {
+        "status": "ok",
+        "env_check": {
+            "TAVILY_API_KEY": "Likely Set" if tavily_api_key and len(tavily_api_key) > 5 else "MISSING",
+            "GEMINI_API_KEY": "Likely Set" if gemini_api_key and len(gemini_api_key) > 5 else "MISSING",
+            "SUPABASE_URL": "Likely Set" if supabase_url else "MISSING",
+            "cwd": os.getcwd(),
+            "files_at_root": os.listdir('.') if os.path.exists('.') else []
+        }
+    }
 
 @app.get("/")
 def read_root():

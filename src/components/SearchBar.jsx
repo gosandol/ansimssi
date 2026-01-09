@@ -288,7 +288,8 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                 <div className={styles.inputWrapper}>
                     <textarea
                         ref={textareaRef}
-                        className={styles.textarea}
+                        className={`${styles.textarea} notranslate`}
+                        translate="no"
                         placeholder={isListening ? "말씀하세요..." : (placeholder || "무엇이든 물어보세요...")}
                         value={query}
                         onChange={handleInput}

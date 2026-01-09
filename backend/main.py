@@ -222,6 +222,8 @@ async def search(request: SearchRequest):
             - NO JSON.
             - NO "Related Questions" text list (UI handles it).
             - NO code blocks.
+            - **NO "Go search on Google/Naver"**: YOU are the search engine. Use the provided Context to answer. Do NOT tell the user to manually search.
+            - **NO Lazy Redirection**: Synthesize the answer yourself.
 
             OUTPUT FORMAT: Raw Markdown text only.
             """

@@ -106,7 +106,7 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
                 const decoder = new TextDecoder();
                 let buffer = '';
 
-                if (active) setLoading(false); // Start showing answer
+                // Removed premature setLoading(false) here to listen for first byte
 
                 while (active) {
                     const { done, value } = await reader.read();
@@ -122,6 +122,9 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
                         try {
                             const event = JSON.parse(line);
                             if (!active) break;
+
+                            // Stop loading on first valid data packet
+                            if (loading) setLoading(false);
 
                             if (event.type === 'meta') {
                                 setSources(event.sources || []);

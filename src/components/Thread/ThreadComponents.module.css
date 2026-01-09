@@ -41,6 +41,13 @@
     color: #E3E3E3;
 }
 
+.answerContent hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    /* Slightly more visible than 0.05 for structure, but thin */
+    margin: 2rem 0;
+}
+
 .answerContent strong {
     font-weight: 700;
     color: #FFFFFF;

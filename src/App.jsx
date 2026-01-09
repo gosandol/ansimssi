@@ -22,6 +22,7 @@ import MoreView from './views/MoreView';
 import NoticeView from './views/NoticeView'; // Import NoticeView
 import TermsOfService from './views/legal/TermsOfService';
 import PrivacyPolicy from './views/legal/PrivacyPolicy';
+import { getSuggestionsForProfile } from './data/suggestionPools';
 
 /* Ideally move these to a CSS module, but keeping inline for quick restoration of previous state if no module existed for App specific home */
 /* Actually, let's use a simple inline style object or class if MainLayout.module.css covers it? */
@@ -156,11 +157,20 @@ function App() {
     }
   }
 
-  const suggestions = [
-    { icon: <Activity size={16} />, text: '고혈압 관리 방법 알려줘' },
-    { icon: <ShieldCheck size={16} />, text: '우리집 안전 점검 리스트' },
-    { icon: <Sun size={16} />, text: '오늘 미세먼지 농도 어때?' },
-  ];
+  const [suggestions, setSuggestions] = useState([]);
+
+  // Effect: Update suggestions when Profile changes
+  useEffect(() => {
+    // Determine role from currentProfile (e.g., 'father', 'mother')
+    // If no profile (null), it falls back to default logic in the helper
+    const role = currentProfile ? currentProfile.role : null;
+
+    // Get 3 random suggestions for this role
+    const newSuggestions = getSuggestionsForProfile(role);
+    setSuggestions(newSuggestions);
+  }, [currentProfile]);
+
+
 
   const [showLoginModal, setShowLoginModal] = useState(false);
 

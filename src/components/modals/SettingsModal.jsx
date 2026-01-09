@@ -49,6 +49,17 @@ const SettingsModal = ({ onClose }) => {
         return '';
     };
 
+    const getRoleLabel = (role) => {
+        switch (role) {
+            case 'father': return '👨 아빠';
+            case 'mother': return '👩 엄마';
+            case 'child': return '🧒 자녀';
+            case 'senior': return '👵 어르신';
+            case 'other': return '👤 기타';
+            default: return role || '가족';
+        }
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -73,7 +84,7 @@ const SettingsModal = ({ onClose }) => {
                                 </div>
                                 <div className={styles.profileInfo}>
                                     <div className={styles.profileName}>{currentProfile.name}</div>
-                                    <div className={styles.profileRole}>{currentProfile.role || '가족 구성원'}</div>
+                                    <div className={styles.profileRole}>{getRoleLabel(currentProfile.role)}</div>
                                     {/* Medical Status Tag */}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
                                         {currentProfile.medicalInfo?.isVerified ? (
@@ -128,7 +139,7 @@ const SettingsModal = ({ onClose }) => {
                                                 {member.name}
                                                 {member.medicalInfo?.isVerified && <ShieldCheck size={14} color="#22d3ee" style={{ marginLeft: 4 }} />}
                                             </span>
-                                            <span className={styles.familyRole}>{member.role}</span>
+                                            <span className={styles.familyRole}>{getRoleLabel(member.role)}</span>
                                         </div>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             {!member.medicalInfo?.isVerified && (
@@ -159,13 +170,19 @@ const SettingsModal = ({ onClose }) => {
                                         className={styles.inputField}
                                         autoFocus
                                     />
-                                    <input
-                                        type="text"
-                                        placeholder="관계/역할 (예: 어머니)"
+                                    <select
                                         value={newMemberRole}
                                         onChange={(e) => setNewMemberRole(e.target.value)}
                                         className={styles.inputField}
-                                    />
+                                        style={{ appearance: 'auto', paddingRight: '1rem', cursor: 'pointer' }}
+                                    >
+                                        <option value="" disabled>역할 선택 (맞춤 추천 제공)</option>
+                                        <option value="father">👨 아빠 (가장)</option>
+                                        <option value="mother">👩 엄마 (주부)</option>
+                                        <option value="child">🧒 자녀 (학생)</option>
+                                        <option value="senior">👵 어르신 (부모님)</option>
+                                        <option value="other">👤 기타</option>
+                                    </select>
                                     <div className={styles.formActions}>
                                         <button type="button" onClick={() => setIsAddingMember(false)} className={styles.cancelBtn}>취소</button>
                                         <button type="submit" className={styles.confirmBtn}>등록</button>

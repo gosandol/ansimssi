@@ -182,23 +182,33 @@ async def search(request: SearchRequest):
             Query: {request.query}
             Context: {full_context}
 
-            **Instructions**:
-            - Answer the query using the context provided.
-            - **Start directly** with the answer text.
-            - **Structure**: Summary -> Numbered Sections -> Beaded Bullets.
-            - **Prohibitions**: NO "Based on...", NO "Caution:" footers.
-            
-            **One-Shot Example (Follow this Style)**:
-            Query: "What are good foods for a cold?"
-            Answer:
-            "When you catch a cold... (Summary)...
-            
-            **1. Warm Fluids**
-            - **item**: desc...
-            
-            **💡 꿀팁:** ..."
+            **STRICT Format Instruction (3-Part Structure)**:
 
-            OUTPUT FORMAT: Just the answer text (Markdown). Do NOT output JSON. Do NOT include related questions here (we generate them separately or use defaults/regex).
+            **Part 1: The Answer (Main Body)**
+            - Summary: Start directly with the answer (1-2 lines).
+            - **Structure**: YOU MUST USE NUMBERED HEADERS for main points (e.g., **1. Step One**, **2. Step Two**).
+            - **Details**: Use beaded bullets inside the numbered sections.
+            - Tone: Professional but friendly (Gemini Persona).
+
+            **Part 2: "⚠️ 이럴 때는..." (Conditional Caution)**
+            - IF AND ONLY IF medical/safety/troubleshooting context:
+            - Add a section titled: **"⚠️ 이럴 때는 반드시 전문가와 상담하세요"** (or similar context-appropriate header).
+            - List 2-3 critical warning signs.
+            - Use a bulleted list for this section.
+            - If not applicable, OMIT this part.
+
+            **Part 3: Conversational Closing (Interactive)**
+            - END with a specific, empathetic question/prompt to continue the dialogue.
+            - Example: "지금 어떤 증상이 가장 심하신가요?", "어떤 부분이 가장 궁금하신가요?", "또 다른 궁금한 점이 있으신가요?"
+            - Do NOT use generic closings. Be context-specific.
+
+            **Prohibitions**:
+            - NO "Based on the search results..." start.
+            - NO JSON output.
+            - NO "Related Questions" list (handled by UI).
+            - NO Markdown code blocks for the answer text itself.
+
+            OUTPUT FORMAT: Raw Markdown text only.
             """
             
             prompt = f"{prompt}\n\n[SYSTEM NOTE: Today is {today_date}.]\n\nContext:\n{full_context}\n\nQuery: {request.query}"

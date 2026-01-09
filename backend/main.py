@@ -147,7 +147,7 @@ async def search(request: SearchRequest):
             # Map sources for Frontend
             frontend_sources = [
                 {"title": r['title'], "url": r.get('url', r.get('link', '#')), "content": r['content']}
-                for r in results[:5] 
+                for r in results[:8] 
                 if 'title' in r and 'content' in r
             ]
 
@@ -162,7 +162,7 @@ async def search(request: SearchRequest):
             }) + "\n"
 
             # Format context
-            search_context = "\n\n".join([f"Source '{r['title']}': {r['content']}" for r in results[:5]])
+            search_context = "\n\n".join([f"Source '{r['title']}': {r['content']}" for r in results[:12]])
             full_context = f"{rag_context}\n\n=== WEB SEARCH RESULTS (Source: {source_engine}) ===\n{search_context}"
 
             # 2. Generate Answer with Gemini (Streaming)
@@ -217,13 +217,10 @@ async def search(request: SearchRequest):
             [Caution if applicable]
             [Closing Question]
 
-            **Prohibitions**:
-            - NO "Based on..." intro.
-            - NO JSON.
-            - NO "Related Questions" text list (UI handles it).
-            - NO code blocks.
-            - **NO "Go search on Google/Naver"**: YOU are the search engine. Use the provided Context to answer. Do NOT tell the user to manually search.
-            - **NO Lazy Redirection**: Synthesize the answer yourself.
+            **Tone & Style**:
+            - **Professional & Deep**: Do not just summarize. Synthesize the logic, cause-and-effect, and specific details from the sources.
+            - **Context-Rich**: Use specific numbers, statistics, and professional terminology found in the context.
+            - **No Fluff**: Avoid generic opening sentences like "Here is the information." Dive straight into the answer.
 
             OUTPUT FORMAT: Raw Markdown text only.
             """

@@ -372,14 +372,14 @@ class SearchManager:
 
         elif any(k in q_lower for k in ["당뇨", "diabetes", "혈당", "인슐린", "insulin", "glucose"]):
              results = [
-                {"title": "당뇨병의 증상과 진단 - 대한당뇨병학회", "url": "https://www.diabetes.or.kr", "content": "대표적인 증상은 다뇨, 다음, 다식입니다. 이유 없는 체중 감소나 피로감도 나타날 수 있습니다."},
-                {"title": "당뇨병 초기증상 5가지 - 서울아산병원", "url": "https://www.amc.seoul.kr", "content": "1. 잦은 소변 2. 심한 갈증 3. 배고픔 4. 체중 감소 5. 시야 흐림. 조기 발견이 합병증 예방의 핵심입니다."},
-                {"title": "당뇨병 관리 가이드 - 질병관리청", "url": "https://health.kdca.go.kr", "content": "약물 요법 뿐만 아니라 식이요법과 운동요법이 병행되어야 혈당을 효과적으로 관리할 수 있습니다."}
+                {"title": "2023 당뇨병 진료지침 (제8판) - 대한당뇨병학회", "url": "https://www.diabetes.or.kr/pro/publish/guide.php", "content": "대한당뇨병학회에서 제공하는 최신 당뇨병 진료지침. 약물 치료, 식사 요법, 운동 요법 등 포괄적인 가이드라인을 웹에서 확인하세요."},
+                {"title": "당뇨병의 진단 및 검사 - 서울아산병원 질환백과", "url": "https://www.amc.seoul.kr/asan/healthinfo/disease/diseaseDetail.do?contentId=31596", "content": "당뇨병의 정의, 원인, 증상, 진단 검사 및 치료 방법에 대한 상세한 의료 정보입니다."},
+                {"title": "국가건강정보포털: 당뇨병 파트", "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoView.do?cntnts_sn=5307", "content": "질병관리청이 제공하는 한국인 당뇨병 예방 및 관리 수칙. 합병증 예방을 위한 생활 가이드를 제공합니다."}
              ]
              images = [
+                 "https://www.diabetes.or.kr/pro/images/sub/guide_img01.jpg",
                  "https://www.amc.seoul.kr/asan/images/healthinfo/disease/disease_img_01.jpg",
                  "https://health.kdca.go.kr/healthinfo/biz/health/file/fileDownload.do?atchFileId=FILE_000000000000123&fileSn=1",
-                 "https://i.ytimg.com/vi/example_diabetes/maxresdefault.jpg",
                  "https://post-phinf.pstatic.net/MjAyMTEyMTZfMjQ5/MDAxNjM5NjM4ODQ5MjQ5.example.jpg"
              ]
         

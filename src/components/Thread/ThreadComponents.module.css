@@ -38,19 +38,18 @@
     /* Slightly larger for easier reading */
     line-height: 1.8;
     /* Generous line height */
-    color: #E3E3E3;
+    color: var(--text-primary);
 }
 
 .answerContent hr {
     border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    /* Slightly more visible than 0.05 for structure, but thin */
+    border-top: 1px solid var(--border-subtle);
     margin: 2rem 0;
 }
 
 .answerContent strong {
     font-weight: 700;
-    color: #FFFFFF;
+    color: var(--text-primary);
     /* High contrast bold */
 }
 
@@ -102,7 +101,7 @@
     margin-top: 2.5rem;
     margin-bottom: 1rem;
     font-weight: 600;
-    color: #F0F4F8;
+    color: var(--text-primary);
     /* Bright White-Blue hints */
     line-height: 1.4;
 }
@@ -192,14 +191,14 @@ blockquote {
     gap: 0.8rem;
     margin-top: 2rem;
     padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--border-subtle);
     /* Subtle separator */
 }
 
 .iconBtn {
     background: transparent;
     border: none;
-    color: var(--gemini-text-secondary);
+    color: var(--text-secondary);
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 50%;

@@ -39,7 +39,6 @@ const MainLayout = ({ children, onNewThread, activeView, session, onLoginClick, 
                         session={session}
                         isThreadMode={isThreadMode}
                         onBackClick={onBackClick}
-                        onBackClick={onBackClick}
                         onLoginClick={onLoginClick}
                     />
                 </div>

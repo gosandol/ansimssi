@@ -88,233 +88,167 @@ class SearchResponse(BaseModel):
     academic: List[dict]
     related_questions: List[str]
 
-@app.post("/api/search", response_model=SearchResponse)
+from fastapi.responses import StreamingResponse
+import json
+
+@app.post("/api/search")
 async def search(request: SearchRequest):
     if not model:
         print("Error: Gemini Model not initialized (Key missing?)")
         raise HTTPException(status_code=500, detail="Gemini Key missing")
 
-
-    try:
-        # === 0. AFFIRMATIVE INTENT INTERCEPTOR (Sero Doctor) ===
-        # If the user says "Yes" or "Connect me" potentially in response to the Medical CTA
-        affirmative_keywords = ["네", "응", "어", "연결해줘", "비대면진료", "새로닥터", "상담할래", "진료받을래"]
-        cleaned_query = request.query.strip().replace(" ", "")
-        
-        # Simple Logic: exact match or containment of strong triggers
-        is_affirmative = (
-            cleaned_query in ["네", "예", "응", "어", "네부탁해요", "네연결해줘", "연결해줘"] or 
-            any(k in cleaned_query for k in ["비대면진료연결", "새로닥터연결", "상담연결"])
-        )
-
-        if is_affirmative:
-            print(f"[Intent] Sero Doctor Connection Triggered by: {request.query}")
-            return SearchResponse(
-                answer="""## 🏥 새로닥터 연결
-                
-네, 알겠습니다. **안심씨의 AI 주치의 서비스**를 통해 전문의와 상담하실 수 있도록 **새로닥터 비대면 진료**를 연결하겠습니다. 
-
-화면의 안내에 따라 증상을 선택하시면 곧바로 진료 접수가 진행됩니다. 잠시만 기다려주세요...""",
-                disclaimer="",
-                sources=[],
-                images=[],
-                academic=[],
-                related_questions=["비대면 진료는 어떻게 진행되나요?", "진료비는 얼마인가요?"]
+    async def event_generator():
+        try:
+            # === 0. AFFIRMATIVE INTENT INTERCEPTOR (Sero Doctor) ===
+            affirmative_keywords = ["네", "응", "어", "연결해줘", "비대면진료", "새로닥터", "상담할래", "진료받을래"]
+            cleaned_query = request.query.strip().replace(" ", "")
+            is_affirmative = (
+                cleaned_query in ["네", "예", "응", "어", "네부탁해요", "네연결해줘", "연결해줘"] or 
+                any(k in cleaned_query for k in ["비대면진료연결", "새로닥터연결", "상담연결"])
             )
 
-        # 0. RAG: Check Medical Knowledge Base first
-        rag_context = ""
-        matched_topics = []
-        try:
-            # Load data if not loaded (basic caching)
-            json_path = os.path.join(os.path.dirname(__file__), 'data', 'medical_data.json')
-            if os.path.exists(json_path):
-                import json
-                with open(json_path, 'r', encoding='utf-8') as f:
-                    medical_knowledge = json.load(f)
+            if is_affirmative:
+                # Immediate Response for Doctor Connection (No LLM needed)
+                # Yield Meta
+                yield json.dumps({"type": "meta", "sources": [], "images": [], "disclaimer": ""}) + "\n"
+                # Yield Content
+                answer = """## 🏥 새로닥터 연결\n\n네, 알겠습니다. **안심씨의 AI 주치의 서비스**를 통해 전문의와 상담하실 수 있도록 **새로닥터 비대면 진료**를 연결하겠습니다.\n\n화면의 안내에 따라 증상을 선택하시면 곧바로 진료 접수가 진행됩니다. 잠시만 기다려주세요..."""
+                yield json.dumps({"type": "content", "delta": answer}) + "\n"
+                # Yield Done
+                yield json.dumps({"type": "done", "related_questions": ["비대면 진료는 어떻게 진행되나요?", "진료비는 얼마인가요?"]}) + "\n"
+                return
+
+            # 0. RAG: Check Medical Knowledge Base first
+            rag_context = ""
+            try:
+                json_path = os.path.join(os.path.dirname(__file__), 'data', 'medical_data.json')
+                if os.path.exists(json_path):
+                    with open(json_path, 'r', encoding='utf-8') as f:
+                        medical_knowledge = json.load(f)
+                    
+                    for item in medical_knowledge:
+                        for keyword in item.get('keywords', []):
+                            if keyword in request.query:
+                                rag_context += f"\n\n[OFFICIAL HEALTH GUIDELINE]\n{item['content']}"
+                                break
+            except Exception as e:
+                print(f"RAG Error: {e}")
+
+            # 1. 5-Tier Hybrid Search (Async)
+            from datetime import datetime
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            search_query = request.query
+            if any(w in request.query for w in ["오늘", "날씨", "뉴스", "today", "weather", "news"]):
+                search_query = f"{search_query} {today_str}"
                 
-                # Simple Keyword Matching
-                for item in medical_knowledge:
-                    for keyword in item.get('keywords', []):
-                        if keyword in request.query:
-                            rag_context += f"\n\n[OFFICIAL HEALTH GUIDELINE]\n{item['content']}"
-                            matched_topics.append(item['id'])
-                            break # Match once per item
-        except Exception as e:
-            print(f"RAG Error: {e}")
+            results, images, source_engine = await search_manager.search(search_query)
+            academic_papers = search_manager.search_academic(search_query)
 
-        # 1. 5-Tier Hybrid Search (SearchManager)
-        
-        # Date Injection for Search
-        from datetime import datetime
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        search_query = request.query
-        if any(w in request.query for w in ["오늘", "날씨", "뉴스", "today", "weather", "news"]):
-            search_query = f"{search_query} {today_str}"
-            
-        results, images, source_engine = await search_manager.search(search_query) # AWAIT ADDED
-        academic_papers = search_manager.search_academic(search_query)
-        print(f"Search Completed via Engine: {source_engine}")
-
-        # Format context (RAG + Search Results)
-        search_context = "\n\n".join([
-            f"Source '{r['title']}': {r['content']}" 
-            for r in results[:5] 
-        ])
-        
-        full_context = f"{rag_context}\n\n=== WEB SEARCH RESULTS (Source: {source_engine}) ===\n{search_context}"
-
-        # 2. Generate Answer with Gemini
-        # NEW: Fetch dynamic system prompt from DB
-        system_prompt_content = fetch_system_prompt()
-        
-        # If the fetched prompt is the placeholder or fallback, we might want to ensure it has the core logic. 
-        # But for now, let's assume the DB has the FULL prompt. 
-        if "System Prompt" in system_prompt_content and len(system_prompt_content) < 100:
-             # It's likely the dummy text we inserted. Let's use the hardcoded one for now until User updates it in Admin.
-             system_prompt = """You are Ansimssi (안심씨), a highly capable AI Assistant.
-             
-             **STYLE & FORMATTING (CRITICAL)**:
-               - **Tone**: Professional, direct, helpful, and empathetic (like Gemini).
-               - **Structure**:
-                 1. Start IMMEDIATELY with the answer (No "Yes", "Here is...", "Based on...").
-                 2. Use **Bold headers** for sections.
-                 3. Use **Bulleted lists** for readability.
-                 4. Use **Numbered lists** only for steps or rankings.
-               - **Prohibitions**:
-                 - **DO NOT** add a "Reference" or "Source" list at the end (Frontend handles this).
-                 - **DO NOT** say "This information is based on...".
-                 - **DO NOT** add generic disclaimers like "Consult a doctor..." (System handles this).
-             
-             **MEDICAL/HEALTH PROTOCOL**:
-               - IF query is Health/Medical => Set `disclaimer_type`="medical".
-               - Append: "안심씨는 여러분의 AI 주치의로서 **새로닥터**를 통해 비대면 진료 서비스를 제공하고 있습니다. 전문의와 상담이 필요하신가요?"
-             
-             **Adaptive Closing**:
-               - Korean: Use "**💡 꿀팁:**" for a final helpful tip.
-             """
-        else:
-             system_prompt = system_prompt_content
-
-
-        from datetime import datetime
-        today_date = datetime.now().strftime("%Y-%m-%d")
-        
-        prompt = f"""
-        {system_prompt}
-
-        **Current Request**:
-        Query: {request.query}
-        Context: {full_context}
-
-        **Instructions**:
-        - Answer the query using the context provided.
-        - **Start directly** with the answer text (NO "Here is the answer").
-        - **Structure**:
-          1. **Summary Paragraph**: A brief, high-level overview (2-3 lines).
-          2. **Numbered Sections** (1. Title, 2. Title...):
-             - Use **Bold Beaded Bullets** (e.g., `- **Item**: Description`).
-        - **Prohibitions**:
-          - **NO** "Based on..." or "Source:" footers.
-          - **NO** "Caution:" or "Disclaimer:" footers (Standard medical warnings are handled by the system).
-        
-        **One-Shot Example (Follow this Style)**:
-        Query: "What are good foods for a cold?"
-        Answer:
-        "When you catch a cold, it's important to consume foods that boost immunity and keep you hydrated. Warm fluids and vitamin-rich fruits are especially helpful.
-        
-        **1. Warm Fluids**
-        - **Honey Tea**: Soothes a sore throat and suppresses coughing.
-        - **Ginger Tea**: Warms the body and helps reduce inflammation.
-        
-        **2. Immunity Boosters**
-        - **Pears**: Contains luteolin which helps with coughs and phlegm.
-        - **Citrus**: Vitamin C helps recovery from fatigue.
-        
-        **💡 꿀팁:** A hot shower can also help relieve nasal congestion."
-
-        OUTPUT FORMAT (JSON ONLY):
-        {{
-            "answer": "Your comprehensive Korean Markdown answer matching the One-Shot Style...",
-            "disclaimer_type": "medical" | "none", 
-            "related_questions": ["질문1?", "질문2?", "질문3?"]
-        }}
-        """
-        
-        prompt = f"{prompt}\n\n[SYSTEM NOTE: Today is {today_date}. If the user asks for 'today', 'weather', or 'news', use this date.]\n\nContext:\n{full_context}\n\nQuery: {request.query}"
-        
-        response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-        
-        import json
-        
-        # Hardcoded Disclaimers to prevent Hallucinations/Typos
-        DISCLAIMER_MEDICAL = "본 답변은 보건복지부의 비의료 건강관리서비스 가이드라인을 준수하며, 의학적 진단, 치료, 처방을 대신할 수 없습니다. 제공되는 정보는 참고용이며, 정확한 의학적 소견은 반드시 전문의와 상의하시기 바랍니다."
-        DISCLAIMER_GENERAL = "제공된 정보는 참고용이며, 정확하지 않을 수 있습니다."
-
-        # Default values
-        answer = ""
-        disclaimer = ""
-        related_questions = []
-
-        try:
-            response_json = json.loads(response.text)
-            answer = response_json.get("answer", "")
-            dis_type = response_json.get("disclaimer_type", "general")
-            # Extract Related Questions from LLM
-            related_questions = response_json.get("related_questions", [])
-            
-            if dis_type == "medical":
-                # User requested removal of forced disclaimer
-                disclaimer = "" 
-            else:
-                disclaimer = "" # No disclaimer for general topics to keep it clean
-                
-        except json.JSONDecodeError:
-            print("Warning: Failed to parse JSON, falling back to raw text")
-            answer = response.text
-            disclaimer = "" # Fallback: no disclaimer to be safe/clean
-            related_questions = []
-
-        # Fallback if LLM returns empty related questions
-        if not related_questions:
-             related_questions = [
-                f"{request.query}에 대해 더 자세히 알려줘",
-                f"{request.query} 주의사항은?",
-                "관련된 최신 뉴스는?"
+            # Map sources for Frontend
+            frontend_sources = [
+                {"title": r['title'], "url": r.get('url', r.get('link', '#')), "content": r['content']}
+                for r in results[:5] 
+                if 'title' in r and 'content' in r
             ]
 
-        # Map sources
-        sources = [
-            Source(title=r['title'], url=r.get('url', r.get('link', '#')), content=r['content']) 
-            for r in results[:5] 
-            if 'title' in r and 'content' in r # Safety check
-        ]
-        
-        # --- SELF IMPROVEMENT LOOP ---
-        # If we used a live engine (not mock/kb), save this successful interaction
-        if source_engine in ["google", "tavily", "exa", "brave"] and answer and len(sources) > 0:
-             search_manager.knowledge_base.save_interaction(
-                 query=request.query,
-                 response_data={
-                     "answer": answer,
-                     "sources": results[:5],
-                     "images": images,
-                     "academic": academic_papers
-                 }
-             )
+            # [STREAM START] Yield Metadata Event
+            # Disclaimer logic is now handled implicitly or via explicit key if needed (we removed forced disclaimer)
+            yield json.dumps({
+                "type": "meta",
+                "sources": frontend_sources,
+                "images": images, 
+                "disclaimer": "", # No forced disclaimer
+                "academic": academic_papers
+            }) + "\n"
 
-        return SearchResponse(
-            answer=answer,
-            disclaimer=disclaimer,
-            sources=sources,
-            images=images,
-            academic=academic_papers,
-            related_questions=related_questions
-        )
+            # Format context
+            search_context = "\n\n".join([f"Source '{r['title']}': {r['content']}" for r in results[:5]])
+            full_context = f"{rag_context}\n\n=== WEB SEARCH RESULTS (Source: {source_engine}) ===\n{search_context}"
 
-    except Exception as e:
-        print(f"Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+            # 2. Generate Answer with Gemini (Streaming)
+            system_prompt_content = fetch_system_prompt()
+            # Fallback logic handled in fetch_system_prompt or if empty string
+            if "System Prompt" in system_prompt_content and len(system_prompt_content) < 100:
+                 system_prompt = """You are Ansimssi (안심씨)... (Fallback shortened)""" 
+            else:
+                 system_prompt = system_prompt_content
+
+            today_date = datetime.now().strftime("%Y-%m-%d")
+            
+            prompt = f"""
+            {system_prompt}
+
+            **Current Request**:
+            Query: {request.query}
+            Context: {full_context}
+
+            **Instructions**:
+            - Answer the query using the context provided.
+            - **Start directly** with the answer text.
+            - **Structure**: Summary -> Numbered Sections -> Beaded Bullets.
+            - **Prohibitions**: NO "Based on...", NO "Caution:" footers.
+            
+            **One-Shot Example (Follow this Style)**:
+            Query: "What are good foods for a cold?"
+            Answer:
+            "When you catch a cold... (Summary)...
+            
+            **1. Warm Fluids**
+            - **item**: desc...
+            
+            **💡 꿀팁:** ..."
+
+            OUTPUT FORMAT: Just the answer text (Markdown). Do NOT output JSON. Do NOT include related questions here (we generate them separately or use defaults/regex).
+            """
+            
+            prompt = f"{prompt}\n\n[SYSTEM NOTE: Today is {today_date}.]\n\nContext:\n{full_context}\n\nQuery: {request.query}"
+
+            # Stream Content
+            response_stream = model.generate_content(prompt, stream=True)
+            
+            full_answer_text = ""
+            for chunk in response_stream:
+                if chunk.text:
+                    full_answer_text += chunk.text
+                    yield json.dumps({"type": "content", "delta": chunk.text}) + "\n"
+
+            # 3. Related Questions (Optional: Separate call or heuristic)
+            # For speed, we can assume them or do a quick separate call.
+            # Or parse them if we forced JSON. But Streaming is better with raw text.
+            # Let's use a heuristic or a quick default for now to save latency.
+            related_questions = [
+                f"{request.query}에 대해 더 자세히 알려줘",
+                f"{request.query} 관련 최신 정보는?",
+                "다른 추천 사항이 있나요?"
+            ]
+            
+            # [STREAM END] Yield Completion Event
+            yield json.dumps({
+                "type": "done", 
+                "related_questions": related_questions
+            }) + "\n"
+            
+            # --- SELF IMPROVEMENT LOOP (Async) ---
+            if source_engine in ["google", "tavily", "exa", "brave"] and full_answer_text and len(frontend_sources) > 0:
+                 # Background save (Fire and forget logic ideally, here synchronous for simplicity)
+                 try:
+                     search_manager.knowledge_base.save_interaction(
+                         query=request.query,
+                         response_data={
+                             "answer": full_answer_text,
+                             "sources": results[:5],
+                             "images": images,
+                             "academic": academic_papers
+                         }
+                     )
+                 except:
+                     pass
+
+        except Exception as e:
+            print(f"Stream Error: {e}")
+            yield json.dumps({"type": "error", "message": str(e)}) + "\n"
+
+    return StreamingResponse(event_generator(), media_type="application/x-ndjson")
 
 # --- Admin API: User Management (CRM) ---
 @app.get("/api/admin/users")

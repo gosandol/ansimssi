@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ImagesSection from '../components/Thread/ImagesSection';
 import SourcesSection from '../components/Thread/SourcesSection'; // Keep for Modal
 import AcademicSection from '../components/Thread/AcademicSection';
-import SourcesRow from '../components/Thread/SourcesRow'; // NEW
+import SourcesRow from '../components/Thread/SourcesRow'; // Keep import if needed, or remove later
 import AnswerSection from '../components/Thread/AnswerSection';
 import RelatedQuestions from '../components/Thread/RelatedQuestions';
 import SearchBar from '../components/SearchBar';
@@ -16,7 +16,7 @@ import { useFamily } from '../context/FamilyContext';
 const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiveSection, isSideChat = false }) => {
     // State for Modal View
     const [viewingDetailedSources, setViewingDetailedSources] = useState(false);
-    const [viewingDetailedAcademic, setViewingDetailedAcademic] = useState(false); // If we want separate modal for academic
+    const [viewingDetailedAcademic, setViewingDetailedAcademic] = useState(false);
 
     // Mock Data Generation based on query
     const [loading, setLoading] = useState(true);
@@ -28,12 +28,10 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
 
     const [sources, setSources] = useState([]);
     const [images, setImages] = useState([]);
-    const [academic, setAcademic] = useState([]); // New
+    const [academic, setAcademic] = useState([]);
     const [answer, setAnswer] = useState('');
     const [disclaimer, setDisclaimer] = useState('');
     const [related, setRelated] = useState([]);
-
-    // Removed local activeSection state since it's now passed from props
 
     const fetchedRef = React.useRef(false);
 
@@ -62,11 +60,8 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
         };
     }, [loading, currentProfile]);
 
+    // 1. Thread Initialization
     useEffect(() => {
-        // Reset state for new query
-        fetchedRef.current = false;
-
-        // 1. Create Thread (Idempotent-ish check) - Wrapped in try-catch to allow UI progress even if DB fails
         const initThread = async () => {
             try {
                 if (!threadId) {
@@ -81,12 +76,15 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
             }
         };
         initThread();
+    }, [initialQuery]);
 
-        // 2. Perform Search
+    // 2. Perform Streaming Search (NDJSON) with AbortController
+    useEffect(() => {
+        let active = true;
+        const controller = new AbortController();
+
         const performSearch = async () => {
-            // Prevent duplicate fetches if Strict Mode invokes twice rapidly for SAME query
-            // But allow re-fetch if query changed (dependency array handles trigger)
-
+            // Reset State
             setLoading(true);
             setAnswer('');
             setSources([]);
@@ -98,43 +96,80 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
                 const response = await fetch(`${API_BASE_URL}/api/search`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: initialQuery })
+                    body: JSON.stringify({ query: initialQuery }),
+                    signal: controller.signal
                 });
 
                 if (!response.ok) throw new Error('Search failed');
 
-                const data = await response.json();
-                setSources(data.sources || []);
-                setImages(data.images || []);
-                setAcademic(data.academic || []); // New
-                setAnswer(data.answer || "");
-                setDisclaimer(data.disclaimer || "");
-                setRelated(data.related_questions || []);
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                if (active) setLoading(false); // Start showing answer
+
+                while (active) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    buffer += chunk;
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line
+
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+                        try {
+                            const event = JSON.parse(line);
+                            if (!active) break;
+
+                            if (event.type === 'meta') {
+                                setSources(event.sources || []);
+                                setImages(event.images || []);
+                                setAcademic(event.academic || []);
+                                if (event.disclaimer) setDisclaimer(event.disclaimer);
+                            }
+                            else if (event.type === 'content') {
+                                setAnswer(prev => prev + (event.delta || ""));
+                            }
+                            else if (event.type === 'done') {
+                                setRelated(event.related_questions || []);
+                            }
+                        } catch (e) {
+                            console.warn("JSON Parse Error", e);
+                        }
+                    }
+                }
+
             } catch (error) {
+                if (error.name === 'AbortError') return;
                 console.error("Search Error:", error);
-                setAnswer("죄송합니다. 검색 중 오류가 발생했습니다. 다시 시도해 주세요.");
+                if (active) setAnswer(prev => prev + "\n\n[통신 오류가 발생했습니다.]");
             } finally {
-                setLoading(false);
+                if (active) setLoading(false);
             }
         };
 
         performSearch();
-    }, [initialQuery]); // Re-run when query changes
 
-    // 3. Save Assistant Message when both threadId and answer are ready
+        return () => {
+            active = false;
+            controller.abort();
+        };
+    }, [initialQuery]);
+
+    // 3. Save Assistant Message
     const savedRef = React.useRef(false);
     useEffect(() => {
         const saveAssistantMessage = async () => {
             if (threadId && answer && !savedRef.current && !loading) {
                 savedRef.current = true;
-                // Note: We might want to save disclaimer too if schema supports it, for now just answer
                 await addMessage(threadId, 'assistant', answer, sources);
             }
         };
         saveAssistantMessage();
     }, [threadId, answer, loading, sources]);
 
-    // Update handler for follow-up searches to save messages
     const handleFollowUp = async (query) => {
         if (threadId) {
             await addMessage(threadId, 'user', query);
@@ -151,30 +186,10 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
         }
     };
 
-
-
-    // 4. Source Toggle Handler (Deprecated, replaced by specific modals)
-    // const [showSources, setShowSources] = useState(false);
-
-    // Gemini Sparkle Icon SVG
-    const SparkleIcon = () => (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 4L14.4 9.6L20 12L14.4 14.4L12 20L9.6 14.4L4 12L9.6 9.6L12 4Z" fill="url(#sparkle_grad)" />
-            <defs>
-                <linearGradient id="sparkle_grad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#4285F4" />
-                    <stop offset="1" stopColor="#9B72CB" />
-                </linearGradient>
-            </defs>
-        </svg>
-    );
-
     return (
         <div className={`${styles.container} ${isSideChat ? styles.sideChatContainer : ''}`}>
             {/* Scrollable Content Area */}
             <div className={styles.contentArea}>
-                {/* Header content removed per user request (Global Header handles it) */}
-
                 {loading ? (
                     <div className={styles.loadingState}>
                         <div className={styles.loadingSpinner}></div>
@@ -198,49 +213,45 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
                             onSourceClick={() => setViewingDetailedSources(true)}
                         />
 
-                        {/* Sources & Related Questions removed per user request */}
+                        {/* NO SourcesRow */}
+                        {/* NO RelatedQuestions */}
 
                         <div style={{ height: '120px' }}></div>
                     </div>
                 )}
-
             </div>
 
             {/* Bottom Sheet for Web Sources */}
-            {
-                viewingDetailedSources && (
-                    <div className={styles.bottomSheetBackdrop} onClick={() => setViewingDetailedSources(false)}>
-                        <div className={styles.bottomSheetContent} onClick={e => e.stopPropagation()}>
-                            <div className={styles.bottomSheetHeader}>
-                                <h3>참조 출처 전체보기</h3>
-                                <button onClick={() => setViewingDetailedSources(false)}>✕</button>
-                            </div>
-                            <SourcesSection sources={sources} />
+            {viewingDetailedSources && (
+                <div className={styles.bottomSheetBackdrop} onClick={() => setViewingDetailedSources(false)}>
+                    <div className={styles.bottomSheetContent} onClick={e => e.stopPropagation()}>
+                        <div className={styles.bottomSheetHeader}>
+                            <h3>참조 출처 전체보기</h3>
+                            <button onClick={() => setViewingDetailedSources(false)}>✕</button>
                         </div>
+                        <SourcesSection sources={sources} />
                     </div>
-                )
-            }
+                </div>
+            )}
 
             {/* Bottom Sheet for Academic Papers */}
-            {
-                viewingDetailedAcademic && (
-                    <div className={styles.bottomSheetBackdrop} onClick={() => setViewingDetailedAcademic(false)}>
-                        <div className={styles.bottomSheetContent} onClick={e => e.stopPropagation()}>
-                            <div className={styles.bottomSheetHeader}>
-                                <h3>전문 임상 자료 전체보기</h3>
-                                <button onClick={() => setViewingDetailedAcademic(false)}>✕</button>
-                            </div>
-                            <AcademicSection papers={academic} />
+            {viewingDetailedAcademic && (
+                <div className={styles.bottomSheetBackdrop} onClick={() => setViewingDetailedAcademic(false)}>
+                    <div className={styles.bottomSheetContent} onClick={e => e.stopPropagation()}>
+                        <div className={styles.bottomSheetHeader}>
+                            <h3>전문 임상 자료 전체보기</h3>
+                            <button onClick={() => setViewingDetailedAcademic(false)}>✕</button>
                         </div>
+                        <AcademicSection papers={academic} />
                     </div>
-                )
-            }
+                </div>
+            )}
 
-            {/* Sticky Search Footer - Always Visible in Unified Stream */}
+            {/* Sticky Search Footer */}
             <div className={`${styles.stickySearchWrapper} ${isSideChat ? styles.sideChatSearch : ''}`}>
                 <SearchBar onSearch={handleFollowUp} placeholder="이어지는 질문하기" dropUpMode={true} />
             </div>
-        </div >
+        </div>
     );
 };
 

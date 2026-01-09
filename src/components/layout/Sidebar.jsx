@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import {
     MessageSquarePlus,
     Box,
@@ -166,6 +167,22 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
         }
     ];
 
+    const [tooltipPos, setTooltipPos] = React.useState(null);
+
+    const handleMouseEnter = (e, itemId) => {
+        // Only show tooltip on desktop (> 768px)
+        if (typeof window !== 'undefined' && window.innerWidth <= 768) return;
+
+        if (!session && itemId === 'mainApp') {
+            setHoveredItem(itemId);
+            const rect = e.currentTarget.getBoundingClientRect();
+            setTooltipPos({
+                top: rect.top + (rect.height / 2),
+                left: rect.right + 10
+            });
+        }
+    };
+
     return (
         <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${className || ''}`}>
 
@@ -240,7 +257,7 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                             <div
                                 key={item.id}
                                 className={styles.navItemWrapper}
-                                onMouseEnter={() => !session && item.id === 'mainApp' && setHoveredItem(item.id)}
+                                onMouseEnter={(e) => handleMouseEnter(e, item.id)}
                                 onMouseLeave={() => setHoveredItem(null)}
                             >
                                 <button
@@ -253,10 +270,23 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                                         <span>{item.label}</span>
                                     </div>
                                 </button>
+                            </div>
+                        ))}
 
-                                {/* Login Prompt Tooltip for Chat Button (Logged Out) */}
-                                {!session && item.id === 'mainApp' && hoveredItem === 'mainApp' && (
-                                    <div className={styles.loginTooltip}>
+                        {/* Portal Tooltip */}
+                        {hoveredItem && tooltipPos && (
+                            typeof document !== 'undefined' ? (
+                                createPortal(
+                                    <div
+                                        className={styles.loginTooltip}
+                                        style={{
+                                            position: 'fixed',
+                                            top: tooltipPos.top,
+                                            left: tooltipPos.left,
+                                            transform: 'translateY(-50%)',
+                                            zIndex: 9999
+                                        }}
+                                    >
                                         채팅 저장을 시작하려면 로그인하세요. 로그인하면 여기에서 최근 채팅에 검색할 수 있습니다.
                                         <span
                                             className={styles.loginLink}
@@ -267,10 +297,11 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                                         >
                                             로그인
                                         </span>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                    </div>,
+                                    document.body
+                                )) : null
+                        )
+                        }
 
                         {/* History Section - Standard View */}
                         {session && (

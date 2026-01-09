@@ -218,8 +218,8 @@ class SearchManager:
         
         # Wait for ALL to complete (Enrichment Strategy)
         # VOICE-FIRST OPTIMIZATION: Adaptive Latency
-        # 1. Primary Wait: 2.0s (Acceptable voice delay)
-        done, pending = await asyncio.wait(tasks, timeout=2.0)
+        # 1. Primary Wait: 4.0s (Acceptable voice delay)
+        done, pending = await asyncio.wait(tasks, timeout=4.0)
         
         aggregated_results = []
         seen_urls = set()
@@ -237,14 +237,14 @@ class SearchManager:
         # If we have < 4 results, it's too thin. Pay the latency cost for intelligence.
         # If we have >= 4, SPEED WINS.
         if initial_yield < 4 and len(pending) > 0:
-            print(f"⚠️ Low yield ({initial_yield}) after 2s. Extending wait for deep research...")
-            second_wave_done, second_wave_pending = await asyncio.wait(pending, timeout=2.0)
+            print(f"⚠️ Low yield ({initial_yield}) after 4s. Extending wait for deep research...")
+            second_wave_done, second_wave_pending = await asyncio.wait(pending, timeout=4.0)
             
             # Meritge second wave into done
             done = done.union(second_wave_done)
             pending = second_wave_pending # Remainder are truly slow/dead
         else:
-            print(f"⚡️ Voice Speed Success: {initial_yield} results in <2.0s. Proceeding.")
+            print(f"⚡️ Voice Speed Success: {initial_yield} results in <4.0s. Proceeding.")
         
         # Collect results from all successful engines (merged from both waves)
         for task in done:

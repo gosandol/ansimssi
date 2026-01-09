@@ -322,6 +322,7 @@ function App() {
           }} />
         ) : activeQuery ? (
           <ThreadView
+            initialQuery={activeQuery}
             onSearch={handleSearch}
           />
         ) : (

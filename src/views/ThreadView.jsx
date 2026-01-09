@@ -216,8 +216,14 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
                             onSourceClick={() => setViewingDetailedSources(true)}
                         />
 
-                        {/* NO SourcesRow */}
-                        {/* NO RelatedQuestions */}
+                        <SourcesRow
+                            sources={sources}
+                            onClick={() => setViewingDetailedSources(true)}
+                        />
+
+                        {related && related.length > 0 && (
+                            <RelatedQuestions questions={related} />
+                        )}
 
                         <div style={{ height: '120px' }}></div>
                     </div>

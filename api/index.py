@@ -76,14 +76,24 @@ if import_status.get('google-genai') == "OK" and gemini_api_key:
 else:
     model = None
 
-# --- INLINE SEARCH MANAGER ---
+# --- INLINE SEARCH MANAGER (5-TIER SYSTEM) ---
 class InlineSearchManager:
     def __init__(self):
+        # Tier 1: Google (SerpApi)
+        self.serpapi_key = os.getenv("SERPAPI_API_KEY")
+        
+        # Tier 2: Tavily (AI Search)
         self.tavily_key = os.getenv("TAVILY_API_KEY")
         if import_status.get('tavily') == "OK" and TavilyClient and self.tavily_key:
             self.tavily_client = TavilyClient(api_key=self.tavily_key)
         else:
             self.tavily_client = None
+
+        # Tier 3: Exa (Neural Search)
+        self.exa_key = os.getenv("EXA_API_KEY")
+
+        # Tier 4: Brave (Backup)
+        self.brave_key = os.getenv("BRAVE_API_KEY")
 
     def search_academic(self, query):
         papers = []
@@ -95,36 +105,148 @@ class InlineSearchManager:
             ]
         return papers
 
-    async def search(self, query):
-        async def run_tavily():
-            if not self.tavily_client: return None
-            try:
-                loop = asyncio.get_event_loop()
-                return await loop.run_in_executor(None, lambda: self.tavily_client.search(query=query, search_depth="basic", include_images=True))
-            except Exception as e:
-                print(f"Tavily Async Failed: {e}")
-                return None
+    def _rank_serpapi_result(self, result):
+        # Basic heuristic for medical sources
+        score = 0
+        url = result.get('link', '')
+        snippet = result.get('snippet', '')
+        title = result.get('title', '')
+        
+        if any(d in url for d in ['.go.kr', '.or.kr', 'hospital', 'clinic', 'health']): score += 3
+        if 'naver.com' in url or 'daum.net' in url: score += 1
+        if len(snippet) > 50: score += 1
+        return score
 
-        print(f"🧠 Starting Search for: {query}")
-        t_res = await run_tavily()
+    async def _search_serpapi(self, query):
+        if not self.serpapi_key: return None
+        print(f"🥇 Tier 1: Trying Google (SerpApi)...")
+        try:
+            params = {
+                "engine": "google",
+                "q": query,
+                "api_key": self.serpapi_key,
+                "hl": "ko",
+                "gl": "kr"
+            }
+            res = await asyncio.to_thread(requests.get, "https://serpapi.com/search", params=params, timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                organic = data.get('organic_results', [])
+                # Normalize to common format
+                results = []
+                for item in organic[:5]:
+                    results.append({
+                        "title": item.get('title'),
+                        "url": item.get('link'),
+                        "content": item.get('snippet'),
+                        "score": self._rank_serpapi_result(item)
+                    })
+                # images
+                images = []
+                if 'inline_images' in data:
+                    images = [img.get('original') or img.get('thumbnail') for img in data['inline_images'][:3]]
+                elif 'images_results' in data:
+                    images = [img.get('original') or img.get('thumbnail') for img in data['images_results'][:3]]
+                
+                return {"results": results, "images": images}
+        except Exception as e:
+            print(f"SerpApi Failed: {e}")
+        return None
+
+    async def _search_tavily(self, query):
+        if not self.tavily_client: return None
+        print(f"⚡️ Tier 2: Trying Tavily...")
+        try:
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, lambda: self.tavily_client.search(query=query, search_depth="basic", include_images=True))
+        except Exception as e:
+            print(f"Tavily Async Failed: {e}")
+            return None
+
+    async def _search_exa(self, query):
+        if not self.exa_key: return None
+        print(f"🧠 Tier 3: Trying Exa...")
+        try:
+            headers = {"x-api-key": self.exa_key, "Content-Type": "application/json"}
+            payload = {
+                "query": query,
+                "useAutoprompt": True,
+                "numResults": 5,
+                "contents": {"text": True}
+            }
+            res = await asyncio.to_thread(requests.post, "https://api.exa.ai/search", headers=headers, json=payload, timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                results = []
+                for item in data.get('results', []):
+                    results.append({
+                        "title": item.get('title') or "제목 없음",
+                        "url": item.get('url'),
+                        "content": item.get('text', '')[:300]
+                    })
+                return {"results": results, "images": []} # Exa usually doesn't return images directly in basic search
+        except Exception as e:
+            print(f"Exa Failed: {e}")
+        return None
+
+    async def _search_brave(self, query):
+        if not self.brave_key: return None
+        print(f"🛡️ Tier 4: Trying Brave...")
+        try:
+            headers = {"Accept": "application/json", "Accept-Encoding": "gzip", "X-Subscription-Token": self.brave_key}
+            params = {"q": query, "count": 5}
+            res = await asyncio.to_thread(requests.get, "https://api.search.brave.com/res/v1/web/search", headers=headers, params=params, timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                web = data.get('web', {}).get('results', [])
+                results = []
+                for item in web:
+                    results.append({
+                        "title": item.get('title'),
+                        "url": item.get('url'),
+                        "content": item.get('description')
+                    })
+                return {"results": results, "images": []}
+        except Exception as e:
+            print(f"Brave Failed: {e}")
+        return None
+
+    async def search(self, query):
+        print(f"🚀 Starting 5-Tier Search for: {query}")
         
         aggregated_results = []
         images = []
         source_engine = "none"
 
-        if t_res and t_res.get('results'):
-            source_engine = "tavily"
-            aggregated_results = t_res['results']
-            images = t_res.get('images', [])
-        else:
-            print("⚠️ No external results found. Entering Mock Fallback...")
-            source_engine = "mock"
-            aggregated_results = [
-                 {"title": f"'{query}' 관련 정보 (Google Scholar)", "url": f"https://scholar.google.co.kr/scholar?q={query}", "content": "전문적인 논문과 연구 자료를 확인하세요."},
-                 {"title": f"'{query}' 지식백과 (Naver)", "url": f"https://terms.naver.com/search.naver?query={query}", "content": "검증된 건강 정보를 찾아보세요."},
-                 {"title": "질병관리청 국가건강정보포털", "url": "https://health.kdca.go.kr", "content": "국가 검증 의학 정보를 제공합니다."}
-            ]
-            images = ["https://ssl.pstatic.net/static/terms/terms_logo.png"]
+        # 1. Tier 1: SerpApi
+        res = await self._search_serpapi(query)
+        if res and res.get('results'):
+            return res['results'], res['images'], "serpapi"
+
+        # 2. Tier 2: Tavily
+        res = await self._search_tavily(query)
+        if res and res.get('results'):
+            return res['results'], res.get('images', []), "tavily"
+
+        # 3. Tier 3: Exa
+        res = await self._search_exa(query)
+        if res and res.get('results'):
+            return res['results'], res.get('images', []), "exa"
+
+        # 4. Tier 4: Brave
+        res = await self._search_brave(query)
+        if res and res.get('results'):
+            return res['results'], res.get('images', []), "brave"
+
+        # 5. Tier 5: Mock (Emergency)
+        print("🚑 Tier 5: Entering Emergency Mock Fallback...")
+        source_engine = "mock"
+        aggregated_results = [
+                {"title": f"'{query}' 관련 정보 (Google Scholar)", "url": f"https://scholar.google.co.kr/scholar?q={query}", "content": "전문적인 논문과 연구 자료를 확인하세요."},
+                {"title": f"'{query}' 지식백과 (Naver)", "url": f"https://terms.naver.com/search.naver?query={query}", "content": "검증된 건강 정보를 찾아보세요."},
+                {"title": "질병관리청 국가건강정보포털", "url": "https://health.kdca.go.kr", "content": "국가 검증 의학 정보를 제공합니다."}
+        ]
+        images = ["https://ssl.pstatic.net/static/terms/terms_logo.png"]
 
         return aggregated_results, images, source_engine
 
@@ -212,12 +334,15 @@ async def get_suggestions(q: str):
 def debug_env():
     return {
         "status": "ok",
-        "message": "Backend is ALIVE (Diagnostic Mode)",
+        "message": "Backend is ALIVE (5-Tier Search System)",
         "imports": import_status,
         "env_check": {
             "TAVILY": "OK" if tavily_api_key else "MISSING",
             "GEMINI": "OK" if gemini_api_key else "MISSING",
-            "SUPABASE_URL": "OK" if supabase_url else "MISSING"
+            "SUPABASE_URL": "OK" if supabase_url else "MISSING",
+            "SERPAPI": "OK" if os.getenv("SERPAPI_API_KEY") else "MISSING (Tier 1)",
+            "EXA": "OK" if os.getenv("EXA_API_KEY") else "MISSING (Tier 3)",
+            "BRAVE": "OK" if os.getenv("BRAVE_API_KEY") else "MISSING (Tier 4)"
         }
     }
 

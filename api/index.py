@@ -14,9 +14,21 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import requests
 
-from tavily import TavilyClient
-import google.generativeai as genai
-from supabase import create_client, Client
+# --- SAFE IMPORT BLOCK ---
+initialization_error = None
+TavilyClient = None
+genai = None
+create_client = None
+supabase = None
+model = None
+
+try:
+    from tavily import TavilyClient
+    import google.generativeai as genai
+    from supabase import create_client, Client
+except Exception as e:
+    initialization_error = str(e)
+    print(f"CRITICAL IMPORT ERROR: {e}")
 
 # Load environment variables
 dotenv_path = os.path.join(os.path.dirname(__file__), '../backend/.env')
@@ -39,27 +51,27 @@ gemini_api_key = os.getenv("GEMINI_API_KEY")
 supabase_url = os.getenv("VITE_SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_ANON_KEY")
 
-supabase: Client = None
-if supabase_url and supabase_key:
-    try:
-        supabase = create_client(supabase_url, supabase_key)
-    except Exception as e:
-        print(f"Supabase Init Failed: {e}")
+if not initialization_error:
+    if supabase_url and supabase_key:
+        try:
+            supabase = create_client(supabase_url, supabase_key)
+        except Exception as e:
+            print(f"Supabase Init Failed: {e}")
 
-if gemini_api_key:
-    genai.configure(api_key=gemini_api_key)
-    model = genai.GenerativeModel('gemini-2.0-flash')
-else:
-    model = None
+    if gemini_api_key:
+        genai.configure(api_key=gemini_api_key)
+        model = genai.GenerativeModel('gemini-2.0-flash')
+    else:
+        model = None
 
 # --- INLINE SEARCH MANAGER (To avoid Vercel Import Errors) ---
 class InlineSearchManager:
     def __init__(self):
         self.tavily_key = os.getenv("TAVILY_API_KEY")
-        self.serpapi_key = os.getenv("SERPAPI_API_KEY")
-        self.exa_key = os.getenv("EXA_API_KEY")
-        self.brave_key = os.getenv("BRAVE_API_KEY")
-        self.tavily_client = TavilyClient(api_key=self.tavily_key) if self.tavily_key else None
+        if TavilyClient and self.tavily_key:
+            self.tavily_client = TavilyClient(api_key=self.tavily_key)
+        else:
+            self.tavily_client = None
 
     def search_academic(self, query):
         # Simplified Logic for Vercel Stability
@@ -257,7 +269,8 @@ async def get_suggestions(q: str):
 @app.get("/api/debug")
 def debug_env():
     return {
-        "status": "ok",
+        "status": "error" if initialization_error else "ok",
+        "init_error": initialization_error,
         "env_check": {
             "TAVILY_API_KEY": "Likely Set" if tavily_api_key and len(tavily_api_key) > 5 else "MISSING",
             "GEMINI_API_KEY": "Likely Set" if gemini_api_key and len(gemini_api_key) > 5 else "MISSING",

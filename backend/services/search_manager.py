@@ -16,64 +16,112 @@ class SearchManager:
 
     def search_academic(self, query):
         """
-        Search for academic papers using SerpApi (Google Scholar)
+        Intelligent Academic Search with Source Routing
+        Decides between Google Scholar (papers) vs Google Search (Gov/Hospital PDFs) based on intent.
         """
         papers = []
         
+        # 1. Intent Classification
+        q_lower = query.lower()
+        
+        # Policy / Statistics -> Government Sources
+        gov_keywords = ["통계", "현황", "정책", "가이드라인", "지침", "법령", "보건소", "질병관리청", "stats", "policy", "guideline"]
+        is_gov = any(k in q_lower for k in gov_keywords)
+        
+        # Clinical / Patient Info -> Major Hospitals
+        clinical_keywords = ["증상", "치료법", "수술", "식이요법", "좋은 음식", "피해야", "symptom", "treatment", "died"]
+        is_clinical = any(k in q_lower for k in clinical_keywords)
+        
+        target_engine = "google_scholar"
+        search_query = query
+        
+        if is_gov:
+            print(f"🏛️ Routing to Government Sources for: {query}")
+            target_engine = "google"
+            # Prioritize credible KR gov sites
+            search_query = f"{query} site:go.kr OR site:or.kr filetype:pdf"
+            
+        elif is_clinical:
+            print(f"🏥 Routing to Medical Institutions for: {query}")
+            target_engine = "google"
+            # Major KR Hospitals & Health Agencies
+            search_query = f"{query} site:snuh.org OR site:amc.seoul.kr OR site:samsunghospital.com OR site:kdca.go.kr filetype:pdf"
+        
+        else:
+            print(f"🎓 Routing to Academic Scholar for: {query}")
+            search_query = query + " filetype:pdf"
+
         if self.serpapi_key:
             try:
-                print(f"Attempting Academic Search (Scholar) for: {query}")
                 import requests
-                params = {
-                    "engine": "google_scholar",
-                    "q": query + " filetype:pdf",  # Prefer PDFs
-                    "api_key": self.serpapi_key,
-                    "num": 6,
-                    "hl": "ko",
-                    "as_ylo": "2020" # Recent papers (since 2020)
-                }
+                
+                if target_engine == "google_scholar":
+                    params = {
+                        "engine": "google_scholar",
+                        "q": search_query,
+                        "api_key": self.serpapi_key,
+                        "num": 6,
+                        "hl": "ko",
+                        "as_ylo": "2020"
+                    }
+                else: # target_engine == "google" (custom filtered)
+                    params = {
+                        "engine": "google",
+                        "q": search_query,
+                        "api_key": self.serpapi_key,
+                        "num": 6,
+                        "hl": "ko",
+                        "gl": "kr"
+                    }
+                    
                 response = requests.get("https://serpapi.com/search", params=params)
                 
                 if response.status_code == 200:
                     data = response.json()
-                    organic_results = data.get("organic_results", [])
                     
-                    papers = []
-                    for item in organic_results:
-                        # Logic to find the BEST link (PDF preferred)
-                        # Scholar results often have 'resources': [{'title': 'so and so', 'link': '...pdf'}]
-                        best_link = item.get("link")
-                        pdf_link = None
+                    if target_engine == "google_scholar":
+                        raw_results = data.get("organic_results", [])
+                    else:
+                        raw_results = data.get("organic_results", [])
                         
-                        resources = item.get("resources", [])
-                        for res in resources:
-                            if "file_format" in res and "pdf" in res["file_format"].lower():
-                                pdf_link = res.get("link")
-                                break
-                            if res.get("link", "").lower().endswith(".pdf"):
-                                pdf_link = res.get("link")
-                                break
+                    for item in raw_results:
+                        # Common parsing logic
+                        title = item.get("title")
+                        link = item.get("link")
+                        snippet = item.get("snippet", "")
                         
-                        # If we found a direct PDF link, use it!
-                        final_link = pdf_link if pdf_link else best_link
+                        # Special handling for Scholar resources
+                        if target_engine == "google_scholar":
+                            resources = item.get("resources", [])
+                            for res in resources:
+                                if res.get("link", "").lower().endswith(".pdf"):
+                                    link = res.get("link")
+                                    break
                         
-                        # Extract Year cleanly
-                        pub_info = item.get("publication_info", {}).get("summary", "")
-                        year = ""
+                        # For Standard Google, link is usually direct, but check snippet for date
+                        pub_info = item.get("publication_info", {}).get("summary", "") # Scholar only
+                        if not pub_info:
+                            # Try to parse source/date from snippet or displayed link
+                            source = item.get("displayed_link", "Source")
+                            pub_info = f"{source}"
+
+                        # Extract Year
                         import re
-                        match = re.search(r'\b20\d{2}\b', pub_info)
+                        year = ""
+                        match = re.search(r'\b20\d{2}\b', snippet + pub_info)
                         if match:
                             year = match.group(0)
 
                         papers.append({
-                            "title": item.get("title"),
-                            "link": final_link,
-                            "snippet": item.get("snippet", ""),
+                            "title": title,
+                            "link": link,
+                            "snippet": snippet,
                             "publication_info": pub_info,
                             "year": year
                         })
+                        
             except Exception as e:
-                print(f"Academic Search Failed: {e}")
+                print(f"Academic/Source Search Failed: {e}")
                 
         # Mock Fallback if no results
         if not papers:

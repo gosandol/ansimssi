@@ -146,71 +146,75 @@ class SearchManager:
                 print(f"Brave Async Failed: {e}")
                 return None
 
-        # --- THE GREAT RACE ---
-        print(f"⚡️ Starting Parallel Search Race for: {query}")
+        # --- THE GREAT AGGREGATION (GEMINI STYLE) ---
+        print(f"🧠 Starting Deep Research (Aggregation) for: {query}")
         
         # Fire all requests simultaneously
         tasks = [
-            asyncio.create_task(run_tavily()), # Priority 1
-            asyncio.create_task(run_google()), # Priority 2
-            asyncio.create_task(run_exa()),    # Priority 3 (Deep)
-            asyncio.create_task(run_brave())   # Priority 4 (Backup)
+            asyncio.create_task(run_tavily()), # General Web & News
+            asyncio.create_task(run_google()), # Real-time Sync & Local
+            asyncio.create_task(run_exa()),    # Deep Content match
+            # asyncio.create_task(run_brave())   # Backup (Skip to save quota/time if others sufficient)
         ]
         
-        # We wait for all to complete (to choose the best) or return first valid?
-        # For maximum speed, we want the "first good one".
-        # But for quality, we might want to prioritize Tavily.
-        # Let's gather all results with a timeout.
+        # Wait for ALL to complete (Enrichment Strategy)
+        # We accept a slightly higher latency (e.g. max 4s) for significantly better quality.
+        done, pending = await asyncio.wait(tasks, timeout=4.5) 
         
-        done, pending = await asyncio.wait(tasks, timeout=5.0) # 5s Max Timeout
+        aggregated_results = []
+        seen_urls = set()
         
-        # Process results in priority order
-        provider_results = {}
+        # Collect results from all successful engines
         for task in done:
             try:
                 res = task.result()
-                if res:
-                    provider_results[res['engine']] = res
+                if res and res.get('results'):
+                    engine_name = res.get('engine')
+                    print(f"✅ {engine_name} contributed {len(res['results'])} results.")
+                    
+                    # Add images if available
+                    if res.get('images'):
+                        images.extend(res['images'])
+                        
+                    # Add unique results
+                    for item in res['results']:
+                        url = item.get('url')
+                        if url and url not in seen_urls:
+                            seen_urls.add(url)
+                            # Tag the source engine for debugging/quality check
+                            item['source_engine'] = engine_name 
+                            aggregated_results.append(item)
             except Exception as e:
-                print(f"Task Error: {e}")
+                print(f"Task Error during aggregation: {e}")
                 
-        # Cancel pending
+        # Cancel any stragglers
         for t in pending: t.cancel()
 
-        # Selection Logic: Tavily > Google > Exa > Brave
-        selected = None
-        if 'tavily' in provider_results:
-            selected = provider_results['tavily']
-        elif 'google' in provider_results:
-            selected = provider_results['google']
-        elif 'exa' in provider_results:
-            selected = provider_results['exa']
-        elif 'brave' in provider_results:
-            selected = provider_results['brave']
-            
-        if selected:
-            results = selected.get('results', [])
-            images = selected.get('images', [])
-            source_engine = selected.get('engine', 'unknown')
-            print(f"🏆 Race Winner: {source_engine}")
-        else:
-             print("❌ All external tiers failed or timed out.")
-
-        # Tier 5: Emergency Fallback
-        if not results:
-            print("Entering Tier 5 (Emergency)...")
+        # Tier 5: Emergency Fallback if ABSOLUTELY nothing found
+        if not aggregated_results:
+            print("⚠️ No external results found. Entering Emergency Fallback...")
             kb_match = self.knowledge_base.find_match(query)
             if kb_match:
                 print("Tier 5-A Success: KB")
-                results = kb_match.get('sources', [])
+                aggregated_results = kb_match.get('sources', [])
                 images = kb_match.get('images', [])
                 source_engine = "knowledge_base"
             else:
                 print("Tier 5-B: Hardcoded Mock")
-                results, images = self._get_mock_data(query)
+                aggregated_results, images = self._get_mock_data(query)
                 source_engine = "mock"
+        else:
+            source_engine = "hybrid_aggregation"
+            
+        # Limit total context to avoid token overflow? 
+        # For now, let's keep top 8-10 high quality ones.
+        # Simple heuristic: Interleave results? 
+        # Or just take top 10 from the mixed bag.
+        final_results = aggregated_results[:12]
+        
+        print(f"🏆 Final Aggregated Context: {len(final_results)} items.")
 
-        return results, images, source_engine
+        return final_results, images, source_engine
 
     # --- Sync Helper Implementations ---
     def _search_google_sync(self, query):

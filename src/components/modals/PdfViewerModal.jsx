@@ -3,8 +3,27 @@ import { X, Download, ExternalLink, FileText } from 'lucide-react';
 import styles from './PdfViewerModal.module.css';
 
 const PdfViewerModal = ({ url, title, onClose }) => {
-    // Google Docs Viewer URL
-    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    // Determine file type
+    const lowerUrl = url ? url.toLowerCase() : "";
+    const isOffice = lowerUrl.endsWith('.doc') || lowerUrl.endsWith('.docx') ||
+        lowerUrl.endsWith('.ppt') || lowerUrl.endsWith('.pptx') ||
+        lowerUrl.endsWith('.xls') || lowerUrl.endsWith('.xlsx');
+
+    // Viewer URL selection
+    let viewerUrl = "";
+    if (isOffice) {
+        // MS Office Online Viewer
+        viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+    } else {
+        // Google Docs Viewer (PDF, HWP, etc.)
+        viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    }
+
+    // Dynamic Title & Icon
+    let typeLabel = "문서 미리보기";
+    if (lowerUrl.endsWith('.pdf')) typeLabel = "PDF 미리보기";
+    else if (lowerUrl.endsWith('.hwp') || lowerUrl.endsWith('.hwpx')) typeLabel = "한글(HWP) 미리보기";
+    else if (isOffice) typeLabel = "Office 문서 미리보기";
 
     return (
         <div className={styles.overlay} onClick={onClose}>
@@ -13,7 +32,10 @@ const PdfViewerModal = ({ url, title, onClose }) => {
                 <div className={styles.header}>
                     <div className={styles.titleGroup}>
                         <FileText size={20} color="#60a5fa" />
-                        <span className={styles.titleText}>{title || "PDF 미리보기"}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span className={styles.titleText}>{title || typeLabel}</span>
+                            <span style={{ fontSize: '0.75rem', color: '#888' }}>{typeLabel}</span>
+                        </div>
                     </div>
 
                     <div className={styles.controls}>
@@ -40,7 +62,7 @@ const PdfViewerModal = ({ url, title, onClose }) => {
                     <iframe
                         src={viewerUrl}
                         className={styles.iframe}
-                        title="PDF Viewer"
+                        title="Document Viewer"
                         allow="autoplay"
                     />
                 </div>

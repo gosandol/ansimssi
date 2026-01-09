@@ -7,9 +7,23 @@ const AcademicSection = ({ papers = [] }) => {
     const [selectedPaper, setSelectedPaper] = React.useState(null);
 
     const handlePaperClick = (e, paper) => {
-        // If it looks like a PDF, prevent default and open modal
-        if (paper.link && paper.link.toLowerCase().endsWith('.pdf')) {
+        if (!paper.link) return;
+
+        const lowerLink = paper.link.toLowerCase();
+        const supportedExtensions = [
+            '.pdf',
+            '.doc', '.docx',
+            '.ppt', '.pptx',
+            '.xls', '.xlsx',
+            '.hwp', '.hwpx'
+        ];
+
+        // Check format
+        const isSupported = supportedExtensions.some(ext => lowerLink.endsWith(ext));
+
+        if (isSupported) {
             e.preventDefault();
+            e.stopPropagation(); // Stop parent handlers (like search triggers)
             setSelectedPaper(paper);
         }
     };
@@ -53,7 +67,16 @@ const AcademicSection = ({ papers = [] }) => {
 
                         <div className={styles.footer}>
                             <span className={styles.tag}>
-                                {paper.link && paper.link.toLowerCase().endsWith('.pdf') ? "PDF Preview" : "Scholarly Article"}
+                                {(() => {
+                                    if (!paper.link) return "Scholarly Article";
+                                    const l = paper.link.toLowerCase();
+                                    if (l.endsWith('.pdf')) return "PDF 미리보기";
+                                    if (l.endsWith('.doc') || l.endsWith('.docx')) return "Word 미리보기";
+                                    if (l.endsWith('.hwp') || l.endsWith('.hwpx')) return "한글(HWP) 미리보기";
+                                    if (l.endsWith('.ppt') || l.endsWith('.pptx')) return "PPT 미리보기";
+                                    if (l.endsWith('.xls') || l.endsWith('.xlsx')) return "Excel 미리보기";
+                                    return "학술 자료 (링크)";
+                                })()}
                             </span>
                         </div>
                     </a>

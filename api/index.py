@@ -6,6 +6,7 @@ import urllib.parse
 from datetime import datetime
 from typing import List, Optional
 
+# Vercel Build Trigger: Force Python Build Detection
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware

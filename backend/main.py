@@ -152,7 +152,7 @@ async def search(request: SearchRequest):
         if any(w in request.query for w in ["오늘", "날씨", "뉴스", "today", "weather", "news"]):
             search_query = f"{search_query} {today_str}"
             
-        results, images, source_engine = search_manager.search(search_query)
+        results, images, source_engine = await search_manager.search(search_query) # AWAIT ADDED
         academic_papers = search_manager.search_academic(search_query)
         print(f"Search Completed via Engine: {source_engine}")
 

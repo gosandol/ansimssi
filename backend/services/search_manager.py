@@ -71,166 +71,169 @@ class SearchManager:
             
         return papers
 
-    def search(self, query):
+    async def search(self, query):
         """
-        Execute 5-Tier Search Strategy
+        Execute Parallel Race Strategy (The "Gemini" Speed)
         """
+        import asyncio
+        
         results = []
         images = []
         source_engine = "none"
 
-        # Tier 1: Google (SerpApi) - The Gold Standard
-        # (Placeholder for future implementation)
-        # Tier 1: Google (SerpApi) - The Gold Standard
-        if not results and self.serpapi_key:
+        # Define async wrappers for each provider
+        async def run_google():
+            if not self.serpapi_key: return None
             try:
-                print(f"Attempting Tier 1 (Google) for: {query}")
-                import requests
-                params = {
-                    "engine": "google",
-                    "q": query,
-                    "api_key": self.serpapi_key,
-                    "num": 5,
-                    "hl": "ko", # Korean interface
-                    "gl": "kr"  # Geolocation Korea
-                }
-                response = requests.get("https://serpapi.com/search", params=params)
+                # SerpApi is blocking, so run in executor
+                loop = asyncio.get_event_loop()
+                return await loop.run_in_executor(None, self._search_google_sync, query)
+            except Exception as e:
+                print(f"Google Async Failed: {e}")
+                return None
+
+        async def run_tavily():
+            if not self.tavily_client: return None
+            try:
+                # Tavily client is blocking
+                loop = asyncio.get_event_loop()
+                return await loop.run_in_executor(None, self._search_tavily_sync, query)
+            except Exception as e:
+                print(f"Tavily Async Failed: {e}")
+                return None
+
+        async def run_exa():
+            if not self.exa_key: return None
+            try:
+                loop = asyncio.get_event_loop()
+                return await loop.run_in_executor(None, self._search_exa_sync, query)
+            except Exception as e:
+                print(f"Exa Async Failed: {e}")
+                return None
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    organic_results = data.get("organic_results", [])
-                    
-                    results = [
-                        {
-                            "title": item.get("title"),
-                            "url": item.get("link"),
-                            "content": item.get("snippet", "")
-                        } for item in organic_results
-                    ]
-                    
-                    if results:
-                        source_engine = "google"
-                        # SerpApi often provides better images in 'images_results' or 'inline_images'
-                        # For now, we rely on the generic image handling or subsequent tiers if images are critical
-            except Exception as e:
-                print(f"Tier 1 Failed: {e}")
-
-        # Tier 2: Tavily - LLM Optimized (Current Main)
-        # Tier 2: Tavily - LLM Optimized (Current Main)
-        if not results and self.tavily_client:
+        async def run_brave():
+            if not self.brave_key: return None
             try:
-                print(f"Attempting Tier 2 (Tavily) for: {query}")
-                search_result = self.tavily_client.search(query=query, search_depth="basic", include_images=True)
-                results = search_result.get("results", [])
-                images = search_result.get("images", [])
-                if results:
-                    source_engine = "tavily"
+                loop = asyncio.get_event_loop()
+                return await loop.run_in_executor(None, self._search_brave_sync, query)
             except Exception as e:
-                print(f"Tier 2 Failed: {e}")
+                print(f"Brave Async Failed: {e}")
+                return None
 
-        # Tier 3: Exa (Metaphor) - Deep Meaning
-        if not results and self.exa_key:
+        # --- THE GREAT RACE ---
+        print(f"⚡️ Starting Parallel Search Race for: {query}")
+        
+        # Fire all requests simultaneously
+        tasks = [
+            asyncio.create_task(run_tavily()), # Priority 1
+            asyncio.create_task(run_google()), # Priority 2
+            asyncio.create_task(run_exa()),    # Priority 3 (Deep)
+            asyncio.create_task(run_brave())   # Priority 4 (Backup)
+        ]
+        
+        # We wait for all to complete (to choose the best) or return first valid?
+        # For maximum speed, we want the "first good one".
+        # But for quality, we might want to prioritize Tavily.
+        # Let's gather all results with a timeout.
+        
+        done, pending = await asyncio.wait(tasks, timeout=5.0) # 5s Max Timeout
+        
+        # Process results in priority order
+        provider_results = {}
+        for task in done:
             try:
-                print(f"Attempting Tier 3 (Exa) for: {query}")
-                import requests
-                headers = {
-                    "accept": "application/json",
-                    "content-type": "application/json",
-                    "x-api-key": self.exa_key
-                }
-                # Exa /contents endpoint (formerly /search)
-                response = requests.post(
-                    "https://api.exa.ai/search",
-                    json={
-                        "query": query,
-                        "numResults": 5,
-                        "useAutoprompt": True, # Exa feature to improve queries
-                        "contents": {"text": True}
-                    },
-                    headers=headers
-                )
+                res = task.result()
+                if res:
+                    provider_results[res['engine']] = res
+            except Exception as e:
+                print(f"Task Error: {e}")
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    exa_results = data.get("results", [])
-                    
-                    results = [
-                        {
-                            "title": item.get("title") or "Exa Result",
-                            "url": item.get("url"),
-                            "content": item.get("text", "")[:300] + "..." # Truncate for display
-                        } for item in exa_results
-                    ]
-                    
-                    if results:
-                        source_engine = "exa"
-            except Exception as e:
-                print(f"Tier 3 Failed: {e}")
+        # Cancel pending
+        for t in pending: t.cancel()
 
-        # Tier 4: Brave - Cost Effective Backup
-        if not results and self.brave_key:
-            try:
-                print(f"Attempting Tier 4 (Brave) for: {query}")
-                import requests
-                headers = {
-                    "Accept": "application/json",
-                    "X-Subscription-Token": self.brave_key
-                }
-                response = requests.get(
-                    "https://api.search.brave.com/res/v1/web/search",
-                    params={"q": query, "count": 5},
-                    headers=headers
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    web_results = data.get("web", {}).get("results", [])
-                    
-                    results = [
-                        {
-                            "title": item.get("title"),
-                            "url": item.get("url"),
-                            "content": item.get("description")
-                        } for item in web_results
-                    ]
-                    
-                    if results:
-                        source_engine = "brave"
-                        # Brave doesn't always return images in standard search, 
-                        # implemented mock images or separate call if needed.
-                        # For now, empty images list is acceptable fallback.
-            except Exception as e:
-                print(f"Tier 4 Failed: {e}")
+        # Selection Logic: Tavily > Google > Exa > Brave
+        selected = None
+        if 'tavily' in provider_results:
+            selected = provider_results['tavily']
+        elif 'google' in provider_results:
+            selected = provider_results['google']
+        elif 'exa' in provider_results:
+            selected = provider_results['exa']
+        elif 'brave' in provider_results:
+            selected = provider_results['brave']
+            
+        if selected:
+            results = selected.get('results', [])
+            images = selected.get('images', [])
+            source_engine = selected.get('engine', 'unknown')
+            print(f"🏆 Race Winner: {source_engine}")
+        else:
+             print("❌ All external tiers failed or timed out.")
 
         # Tier 5: Emergency Fallback
         if not results:
-            print("All External tiers failed. Entering Tier 5 (Emergency)...")
-            
-            # Layer 5-A: Knowledge Base (Self-Learning)
+            print("Entering Tier 5 (Emergency)...")
             kb_match = self.knowledge_base.find_match(query)
             if kb_match:
-                print("Tier 5-A Success: Retrieved from Knowledge Base")
-                results_raw = kb_match.get('sources', [])
-                # Convert dict back to object structure if needed by caller, or keep as dict
-                # For consistency with current main.py which expects dicts in the list
-                results = results_raw 
+                print("Tier 5-A Success: KB")
+                results = kb_match.get('sources', [])
                 images = kb_match.get('images', [])
                 source_engine = "knowledge_base"
-
-            # Layer 5-B: Hardcoded Mock (Core Safety Net)
-            if not results:
-                print("Tier 5-A Failed. Triggering Tier 5-B (Hardcoded Mock)")
+            else:
+                print("Tier 5-B: Hardcoded Mock")
                 results, images = self._get_mock_data(query)
-                if results:
-                    source_engine = "mock"
-
-        # Auto-Learning: If we got results from external API (Tiers 1-4), save to KB
-        if source_engine in ["google", "tavily", "exa", "brave"]:
-            # We need the final answer to save a complete record, 
-            # but search() only returns raw data. 
-            # Saving will be handled in the main flow after answer generation.
-            pass
+                source_engine = "mock"
 
         return results, images, source_engine
+
+    # --- Sync Helper Implementations ---
+    def _search_google_sync(self, query):
+        print(f"Attempting Tier 1 (Google) for: {query}")
+        import requests
+        params = {
+            "engine": "google",
+            "q": query,
+            "api_key": self.serpapi_key,
+            "num": 5,
+            "hl": "ko", "gl": "kr"
+        }
+        response = requests.get("https://serpapi.com/search", params=params)
+        if response.status_code == 200:
+            data = response.json()
+            organic = data.get("organic_results", [])
+            results = [{"title": i.get("title"), "url": i.get("link"), "content": i.get("snippet", "")} for i in organic]
+            if results: return {"engine": "google", "results": results, "images": []}
+        return None
+
+    def _search_tavily_sync(self, query):
+        print(f"Attempting Tier 2 (Tavily) for: {query}")
+        search_result = self.tavily_client.search(query=query, search_depth="basic", include_images=True)
+        results = search_result.get("results", [])
+        images = search_result.get("images", [])
+        if results: return {"engine": "tavily", "results": results, "images": images}
+        return None
+
+    def _search_exa_sync(self, query):
+        print(f"Attempting Tier 3 (Exa) for: {query}")
+        import requests
+        headers = {"accept": "application/json", "content-type": "application/json", "x-api-key": self.exa_key}
+        response = requests.post("https://api.exa.ai/search", json={"query": query, "numResults": 5, "useAutoprompt": True, "contents": {"text": True}}, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            results = [{"title": i.get("title") or "Exa Result", "url": i.get("url"), "content": i.get("text", "")[:300] + "..."} for i in data.get("results", [])]
+            if results: return {"engine": "exa", "results": results, "images": []}
+        return None
+
+    def _search_brave_sync(self, query):
+         print(f"Attempting Tier 4 (Brave) for: {query}")
+         import requests
+         headers = {"Accept": "application/json", "X-Subscription-Token": self.brave_key}
+         response = requests.get("https://api.search.brave.com/res/v1/web/search", params={"q": query, "count": 5}, headers=headers)
+         if response.status_code == 200:
+             data = response.json()
+             results = [{"title": i.get("title"), "url": i.get("url"), "content": i.get("description")} for i in data.get("web", {}).get("results", [])]
+             if results: return {"engine": "brave", "results": results, "images": []}
+         return None
 
     def _get_mock_data(self, query):
         """

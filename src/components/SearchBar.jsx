@@ -406,7 +406,12 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                             <button
                                 className={`${styles.submitButton} ${styles.active}`}
                                 onClick={() => {
-                                    onSearch(query);
+                                    let finalQuery = query;
+                                    if (activeSearchMode === 'hospital') finalQuery = `[병원검색] ${query}`;
+                                    else if (activeSearchMode === 'pharmacy') finalQuery = `[약국검색] ${query}`;
+                                    else if (activeSearchMode === 'encyclopedia') finalQuery = `[건강백과] ${query}`;
+
+                                    onSearch(finalQuery);
                                     setQuery('');
                                     if (textareaRef.current) textareaRef.current.style.height = 'auto';
                                 }}

@@ -9,11 +9,6 @@
             "destination": "/index.html"
         }
     ],
-    "functions": {
-        "api/*.py": {
-            "maxDuration": 10
-        }
-    },
     "regions": [
         "icn1"
     ]

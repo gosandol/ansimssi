@@ -103,8 +103,12 @@ def fetch_system_prompt():
     return default_prompt
 
 class SearchRequest(BaseModel):
-    query: str
+    query: Optional[str] = ""
     thread_id: Optional[str] = None
+    messages: Optional[List[dict]] = None
+    
+    class Config:
+        extra = "ignore"
 
 class Source(BaseModel):
     title: str

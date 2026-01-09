@@ -369,7 +369,7 @@ class SearchManager:
                 "https://www.yongin.go.kr/resources/images/hist/content/img_hist_2020_04_01.jpg"
             ]
 
-        elif "당뇨" in query or "diabetes" in q_lower:
+        elif any(k in q_lower for k in ["당뇨", "diabetes", "혈당", "인슐린", "insulin", "glucose"]):
              results = [
                 {"title": "당뇨병의 증상과 진단 - 대한당뇨병학회", "url": "https://www.diabetes.or.kr", "content": "대표적인 증상은 다뇨, 다음, 다식입니다. 이유 없는 체중 감소나 피로감도 나타날 수 있습니다."},
                 {"title": "당뇨병 초기증상 5가지 - 서울아산병원", "url": "https://www.amc.seoul.kr", "content": "1. 잦은 소변 2. 심한 갈증 3. 배고픔 4. 체중 감소 5. 시야 흐림. 조기 발견이 합병증 예방의 핵심입니다."},
@@ -396,17 +396,33 @@ class SearchManager:
                 "http://www.samsunghospital.com/upload/editor/20200518_1.jpg"
             ]
         
-        elif "감기" in query or "cold" in q_lower:
+        elif any(k in q_lower for k in ["감기", "독감", "cold", "flu", "기침", "열"]):
             results = [
                  {"title": "감기와 독감의 차이점 - 질병관리청", "url": "https://kdca.go.kr", "content": "감기는 바이러스 감염에 의한 상기도 감염이며, 독감은 인플루엔자 바이러스에 의한 급성 호흡기 질환입니다."},
-                 {"title": "감기 빨리 낫는 법 10가지", "url": "https://www.healthline.com", "content": "충분한 수분 섭취, 휴식, 가습기 사용, 따뜻한 차 마시기 등이 도움이 됩니다."},
-                 {"title": "약 먹어도 감기가 안 낫는 이유", "url": "https://www.youtube.com/watch?v=example", "content": "감기약은 증상을 완화할 뿐 바이러스를 치료하지 않습니다. 면역력이 중요합니다."}
+                 {"title": "환절기 호흡기 건강 관리 수칙", "url": "https://www.amc.seoul.kr", "content": "충분한 수분 섭취와 실내 습도 유지가 중요합니다. 외출 후 손 씻기를 생활화하세요."},
+                 {"title": "면역력 높이는 생활 습관 5가지", "url": "https://health.chosun.com", "content": "규칙적인 운동, 충분한 수면, 균형 잡힌 식단이 기본입니다. 비타민 D 섭취도 권장됩니다."}
             ]
             images = [
-                "https://img.freepik.com/free-photo/sick-woman-blowing-her-nose_23-2147743128.jpg",
-                "https://i.ytimg.com/vi/example/maxresdefault.jpg",
-                "https://images.unsplash.com/photo-1513201099718-4ed89549448f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
-                "https://post-phinf.pstatic.net/MjAxOTEwMjlfMjQ4/MDAxNTcyMzE1MjE4MjQ4.example.jpg"
+                "https://health.kdca.go.kr/healthinfo/biz/health/file/fileDownload.do?atchFileId=FILE_000000000000156&fileSn=1",
+                "https://www.amc.seoul.kr/asan/images/healthinfo/disease/disease_img_02.jpg",
+                "https://post-phinf.pstatic.net/MjAyMTEyMTZfMjQ5/MDAxNjM5NjM4ODQ5MjQ5.example.jpg",
+                "https://img.freepik.com/free-photo/hot-tea-cup_23-2148111111.jpg"
+            ]
+            
+        else:
+            # Geneic Health / Default Fallback (Safe Portals)
+            print("Using Generic Health Mock Data")
+            results = [
+                {"title": "국가건강정보포털 - 알기 쉬운 의학정보", "url": "https://health.kdca.go.kr", "content": "질병관리청이 제공하는 검증된 건강 정보. 질병, 증상, 예방접종, 건강검진 등 다양한 의학 정보를 검색할 수 있습니다."},
+                {"title": "서울아산병원 질환백과", "url": "https://www.amc.seoul.kr/asan/healthinfo/disease/diseaseList.do", "content": "서울아산병원 전문 의료진이 검수한 질환, 검사, 시술 정보. 증상별 자가 진단 및 치료법 안내."},
+                {"title": "건강보험심사평가원 - 내가 먹는 약 한눈에", "url": "https://www.hira.or.kr", "content": "내가 처방받은 의약품의 효능, 효과, 복용법을 확인하세요. 중복 처방 및 병용 금기 약물 정보도 제공합니다."},
+                {"title": "응급의료포털 E-Gen", "url": "https://www.e-gen.or.kr", "content": "내 주변 응급실, 병원, 약국 찾기. 응급처치 요령 및 자동심장충격기(AED) 위치 정보 제공."}
+            ]
+            images = [
+                 "https://health.kdca.go.kr/healthinfo/biz/health/file/fileDownload.do?atchFileId=FILE_000000000000100&fileSn=1",
+                 "https://www.amc.seoul.kr/asan/images/common/logo_asan_og.jpg",
+                 "https://www.hira.or.kr/images/common/logo.png",
+                 "https://www.e-gen.or.kr/images/common/logo.png"
             ]
 
         return results, images

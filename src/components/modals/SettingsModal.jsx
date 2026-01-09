@@ -43,7 +43,7 @@ const SettingsModal = ({ onClose }) => {
     };
 
     const getThemeLabel = (t) => {
-        if (t === 'system') return '시스템 모드 (기기 설정 따름)';
+        if (t === 'system') return '자동';
         if (t === 'light') return '화이트 모드';
         if (t === 'dark') return '다크 모드';
         return '';
@@ -243,7 +243,7 @@ const SettingsModal = ({ onClose }) => {
                             >
                                 <div className={styles.labelGroup}>
                                     <Smartphone size={18} />
-                                    <span>시스템 모드 (기기 설정 따름)</span>
+                                    <span>자동</span>
                                 </div>
                                 {theme === 'system' && <Check size={18} color="#3b82f6" />}
                             </button>

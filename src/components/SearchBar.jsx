@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Paperclip, Globe, Focus, Mic, Search, ChevronDown, Check, Sparkles } from 'lucide-react';
+import ListeningWaveIcon from './icons/ListeningWaveIcon';
 import styles from './SearchBar.module.css';
 import VoiceChatView from '../views/VoiceChatView';
 import { isKoreanMatch } from '../lib/hangul';
@@ -428,13 +429,13 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                             </button>
                         )}
 
-                        {/* 2. Voice Chat Mode - Gemini Style */}
+                        {/* 2. Voice Chat Mode - Ansimssi Blue Wave */}
                         <button
                             className={`${styles.submitButton} ${styles.hasTooltip}`}
                             onClick={() => setShowVoiceChat(true)}
                             data-tooltip="음성 대화"
                             style={{
-                                background: 'linear-gradient(135deg, #4285f4 0%, #9b72cb 50%, #d96570 100%)',
+                                background: 'linear-gradient(135deg, #22d3ee 0%, #818cf8 100%)',
                                 color: 'white',
                                 border: 'none',
                                 display: 'flex',
@@ -442,7 +443,7 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                                 justifyContent: 'center'
                             }}
                         >
-                            <Sparkles size={18} strokeWidth={1.5} />
+                            <ListeningWaveIcon size={18} />
                         </button>
                     </div>
                 </div>

@@ -9,7 +9,9 @@ const AcademicSection = ({ papers = [] }) => {
     const handlePaperClick = (e, paper) => {
         if (!paper.link) return;
 
-        const lowerLink = paper.link.toLowerCase();
+        // Robust detection: strip query params/hashes
+        const cleanLink = paper.link.split('?')[0].split('#')[0].toLowerCase();
+
         const supportedExtensions = [
             '.pdf',
             '.doc', '.docx',
@@ -19,12 +21,15 @@ const AcademicSection = ({ papers = [] }) => {
         ];
 
         // Check format
-        const isSupported = supportedExtensions.some(ext => lowerLink.endsWith(ext));
+        const isSupported = supportedExtensions.some(ext => cleanLink.endsWith(ext));
 
         if (isSupported) {
             e.preventDefault();
             e.stopPropagation(); // Stop parent handlers (like search triggers)
             setSelectedPaper(paper);
+        } else {
+            // For external links, explicit handling if needed, otherwise default <a> behavior
+            e.stopPropagation(); // Stop search triggers even for external links!
         }
     };
 
@@ -43,58 +48,66 @@ const AcademicSection = ({ papers = [] }) => {
         <>
             <div className={styles.container}>
                 {papers.map((paper, idx) => {
-                    const isViewable = (() => {
-                        if (!paper.link) return false;
-                        const l = paper.link.toLowerCase();
-                        return l.endsWith('.pdf') || l.endsWith('.hwp') || l.endsWith('.hwpx') ||
-                            l.endsWith('.doc') || l.endsWith('.docx') || l.endsWith('.ppt') || l.endsWith('.pptx');
-                    })();
+                    const cleanLink = paper.link ? paper.link.split('?')[0].split('#')[0].toLowerCase() : "";
+
+                    const isViewable = [
+                        '.pdf', '.hwp', '.hwpx',
+                        '.doc', '.docx',
+                        '.ppt', '.pptx',
+                        '.xls', '.xlsx'
+                    ].some(ext => cleanLink.endsWith(ext));
+
+                    // Hide snippets that are too short or redundant
+                    const showSnippet = paper.snippet && paper.snippet.length > 20 && paper.snippet !== paper.title;
 
                     return (
-                        <a
-                            key={idx}
-                            href={paper.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.paperCard}
-                            onClick={(e) => handlePaperClick(e, paper)}
-                        >
-                            <div className={styles.header}>
-                                <div className={styles.title}>{paper.title}</div>
-                                {paper.year && <span className={styles.yearBadge}>{paper.year}년</span>}
-                            </div>
+                        <div key={idx} className={styles.paperCardWrapper}>
+                            <a
+                                href={paper.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.paperCard}
+                                onClick={(e) => handlePaperClick(e, paper)}
+                            >
+                                <div className={styles.header}>
+                                    <div className={styles.title}>{paper.title}</div>
+                                    {paper.year && <span className={styles.yearBadge}>{paper.year}</span>}
+                                </div>
 
-                            <div className={styles.metaInfo}>
-                                <BookOpen size={14} style={{ minWidth: '14px' }} />
-                                {/* Clean up publication info if it contains messy truncated text */}
-                                <span>{paper.publication_info ? paper.publication_info.split(' - ')[0] : "학술 출처 미상"}</span>
-                            </div>
+                                <div className={styles.metaInfo}>
+                                    <BookOpen size={14} style={{ minWidth: '14px', flexShrink: 0 }} />
+                                    <span className={styles.metaText}>
+                                        {paper.publication_info || "학술 자료"}
+                                    </span>
+                                </div>
 
-                            <div className={styles.snippet}>
-                                {paper.snippet}
-                            </div>
+                                {showSnippet && (
+                                    <div className={styles.snippet}>
+                                        {paper.snippet}
+                                    </div>
+                                )}
 
-                            <div className={styles.footer}>
-                                <span className={`${styles.tag} ${isViewable ? styles.viewableTag : styles.linkTag}`}>
-                                    {isViewable ? (
-                                        <>
-                                            <span style={{ marginRight: '4px' }}>📄</span>
-                                            {(() => {
-                                                const l = paper.link.toLowerCase();
-                                                if (l.endsWith('.pdf')) return "PDF 바로보기";
-                                                if (l.endsWith('.hwp') || l.endsWith('.hwpx')) return "한글(HWP) 바로보기";
-                                                return "문서 뷰어 열기";
-                                            })()}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <ExternalLink size={12} style={{ marginRight: '4px' }} />
-                                            외부 링크로 이동
-                                        </>
-                                    )}
-                                </span>
-                            </div>
-                        </a>
+                                <div className={styles.footer}>
+                                    <span className={`${styles.tag} ${isViewable ? styles.viewableTag : styles.linkTag}`}>
+                                        {isViewable ? (
+                                            <>
+                                                <span style={{ marginRight: '4px' }}>📄</span>
+                                                {(() => {
+                                                    if (cleanLink.endsWith('.pdf')) return "PDF 원문보기";
+                                                    if (cleanLink.endsWith('.hwp') || cleanLink.endsWith('.hwpx')) return "한글(HWP) 원문보기";
+                                                    return "문서 뷰어 열기";
+                                                })()}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ExternalLink size={12} style={{ marginRight: '4px' }} />
+                                                외부 사이트 이동
+                                            </>
+                                        )}
+                                    </span>
+                                </div>
+                            </a>
+                        </div>
                     );
                 })}
             </div>

@@ -9,75 +9,9 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
 
     return (
         <div className={styles.sectionContainer}>
-            <div className={styles.sectionHeader}>
-                {/* Header Left: Thinking Process Toggle */}
-                <div className={styles.headerLeft}>
-                    {sources.length > 0 ? (
-                        <div
-                            className={styles.thinkingProcess}
-                            onClick={() => setShowProcess(!showProcess)}
-                        >
-                            {showProcess ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                            <span>검토됨 {sources.length}개의 소스</span>
-                        </div>
-                    ) : (
-                        <div className={styles.thinkingProcess}>
-                            <Loader2 size={18} className={styles.spinningLoader} />
-                            <span>답변 생성 중...</span>
-                        </div>
-                    )}
-                </div>
+            {/* Header Removed per User Request: Clean Start directly with Answer */}
 
-                {/* Header Right: More Options */}
-                <div className={styles.headerRight}>
-                    <button className={styles.iconBtn}>
-                        <MoreVertical size={20} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Timeline Content */}
-            {showProcess && sources.length > 0 && (
-                <div className={styles.processTimeline}>
-                    {/* Step 1: Searching */}
-                    <div className={`${styles.processStep} ${styles.active}`}>
-                        <div className={styles.stepHeader}>
-                            <span>검색 중</span>
-                        </div>
-                        <div className={styles.searchQueryPill}>
-                            <Search size={14} />
-                            <span>{query}</span>
-                        </div>
-                    </div>
-
-                    {/* Step 2: Checking Sources */}
-                    <div className={`${styles.processStep} ${styles.active}`}>
-                        <div className={styles.stepHeader}>
-                            <span>소스 검토 중 · {sources.length}</span>
-                        </div>
-                        <div className={styles.sourceGrid}>
-                            {sources.filter(s => s).map((source, idx) => (
-                                <a key={idx} href={source.url || source.link} target="_blank" rel="noopener noreferrer" className={styles.sourceChip}>
-                                    <img
-                                        src={`https://www.google.com/s2/favicons?domain=${(() => {
-                                            try { return new URL(source.url || source.link).hostname; } catch { return 'google.com'; }
-                                        })()}`}
-                                        alt=""
-                                    />
-                                    <span>{source.title}</span>
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Step 3: Completed */}
-                    <div className={styles.processStep}>
-                        <div className={styles.stepHeader}>
-                            <span>완료됨</span>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Inline Primary Image Removed for Readability - User Request */}
 
             {/* Inline Primary Image Removed for Readability - User Request */}
             {/* {sources.length > 0 && images && images.length > 0 && (
@@ -122,65 +56,40 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
             })()}
 
             {/* Dynamic Disclaimer */}
-            {disclaimer && (
-                <div className={styles.disclaimer}>
-                    <p>⚠️ <strong>주의사항:</strong> {disclaimer}</p>
-                </div>
-            )}
+
 
 
 
             <div className={styles.answerActions}>
-                {/* Left: Share, Copy, Rewrite */}
-                <div className={styles.actionLeft}>
-                    <button className={styles.iconBtn} aria-label="Share">
-                        <Share size={18} />
-                    </button>
-                    <button className={styles.iconBtn} aria-label="Copy">
-                        <Copy size={18} />
-                    </button>
-                    <button className={styles.iconBtn} aria-label="Rewrite">
-                        <RotateCcw size={18} />
-                    </button>
-                </div>
+                {/* Gemini Style Action Row: [Like] [Dislike] [Copy] [Share] [Google] [More] */}
 
-                {/* Center: Sources (Overlapping) */}
-                <div
-                    className={styles.actionCenter}
-                    onClick={onSourceClick}
-                    style={{ cursor: 'pointer' }}
-                >
-                    <div className={styles.sourceIcons}>
-                        {sources.filter(s => s).slice(0, 3).map((source, index) => (
-                            <div key={index} className={styles.sourceCircle} style={{ zIndex: 3 - index }}>
-                                <img
-                                    src={`https://www.google.com/s2/favicons?domain=${(() => {
-                                        try { return new URL(source.url || source.link).hostname; } catch { return 'google.com'; }
-                                    })()}`}
-                                    alt="source"
-                                    onError={(e) => { e.target.style.display = 'none' }}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                    <span className={styles.sourceCount}>{sources.length > 0 ? sources.length : ''}</span>
-                </div>
+                {/* 1. Feedback Group */}
+                <button className={styles.iconBtn} aria-label="Good response">
+                    <ThumbsUp size={19} />
+                </button>
+                <button className={styles.iconBtn} aria-label="Bad response">
+                    <ThumbsDown size={19} />
+                </button>
 
-                {/* Right: Thumbs, More */}
-                <div className={styles.actionRight}>
-                    <button className={styles.iconBtn} aria-label="Like">
-                        <ThumbsUp size={18} />
-                    </button>
-                    <button className={styles.iconBtn} aria-label="Dislike">
-                        <ThumbsDown size={18} />
-                    </button>
-                    <button className={styles.iconBtn} aria-label="More">
-                        <MoreHorizontal size={18} />
-                    </button>
-                </div>
+                {/* 2. Utility Group */}
+                <button className={styles.iconBtn} aria-label="Copy">
+                    <Copy size={19} />
+                </button>
+                <button className={styles.iconBtn} aria-label="Share">
+                    <Share size={19} />
+                </button>
+
+                {/* 3. Search / More */}
+                <button className={styles.iconBtn} aria-label="Google Search">
+                    <Search size={19} />
+                </button>
+                <button className={styles.iconBtn} aria-label="More options">
+                    <MoreVertical size={19} />
+                </button>
             </div>
         </div>
     );
 };
+
 
 export default AnswerSection;

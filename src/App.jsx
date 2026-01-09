@@ -58,7 +58,6 @@ function App() {
   }, []);
 
   // 1. URL Routing Logic
-  const [threadTab, setThreadTab] = useState('answer'); // Lifted state for Header Tabs
 
   useEffect(() => {
     const handleUrlChange = () => {
@@ -68,7 +67,7 @@ function App() {
         if (query) {
           setActiveQuery(query);
           setViewState('mainApp');
-          setThreadTab('answer'); // Reset tab on new thread load
+          setViewState('mainApp');
         }
       } else if (path === '/' || path === '') {
         setActiveQuery(null);
@@ -228,8 +227,6 @@ function App() {
           setViewState('mainApp');
           window.history.pushState({}, '', '/');
         }} // Full Reset to Home
-        threadTab={threadTab}
-        setThreadTab={setThreadTab}
       >
         {viewState === 'healthLab' ? (
           <HealthLabView />
@@ -327,8 +324,7 @@ function App() {
           <ThreadView
             initialQuery={activeQuery}
             onSearch={handleSearch}
-            activeSection={threadTab}
-            setActiveSection={setThreadTab}
+            onSearch={handleSearch}
           />
         ) : (
           <div style={{

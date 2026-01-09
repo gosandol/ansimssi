@@ -4,7 +4,7 @@ import GlobalHeader from '../components/layout/GlobalHeader';
 import styles from './MainLayout.module.css';
 import { X } from 'lucide-react';
 
-const MainLayout = ({ children, onNewThread, activeView, session, onLoginClick, onSettingsClick, isThreadMode, onBackClick, threadTab, setThreadTab }) => {
+const MainLayout = ({ children, onNewThread, activeView, session, onLoginClick, onSettingsClick, isThreadMode, onBackClick }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true); // Default collapsed on desktop (Rail mode)
 
@@ -39,8 +39,7 @@ const MainLayout = ({ children, onNewThread, activeView, session, onLoginClick, 
                         session={session}
                         isThreadMode={isThreadMode}
                         onBackClick={onBackClick}
-                        activeSection={threadTab}
-                        onNavigate={setThreadTab}
+                        onBackClick={onBackClick}
                         onLoginClick={onLoginClick}
                     />
                 </div>

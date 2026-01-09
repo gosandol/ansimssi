@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import ImagesSection from '../components/Thread/ImagesSection';
-import SourcesSection from '../components/Thread/SourcesSection';
-import AcademicSection from '../components/Thread/AcademicSection'; // New
-import SourcesCarousel from '../components/Thread/SourcesCarousel';
+import SourcesSection from '../components/Thread/SourcesSection'; // Keep for Modal
+import AcademicSection from '../components/Thread/AcademicSection';
+import SourcesRow from '../components/Thread/SourcesRow'; // NEW
 import AnswerSection from '../components/Thread/AnswerSection';
 import RelatedQuestions from '../components/Thread/RelatedQuestions';
 import SearchBar from '../components/SearchBar';
@@ -14,6 +14,10 @@ import { API_BASE_URL } from '../lib/api_config';
 import { useFamily } from '../context/FamilyContext';
 
 const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiveSection, isSideChat = false }) => {
+    // State for Modal View
+    const [viewingDetailedSources, setViewingDetailedSources] = useState(false);
+    const [viewingDetailedAcademic, setViewingDetailedAcademic] = useState(false); // If we want separate modal for academic
+
     // Mock Data Generation based on query
     const [loading, setLoading] = useState(true);
     const [threadId, setThreadId] = useState(null);
@@ -149,104 +153,94 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
 
 
 
-    // 4. Source Toggle Handler
-    const [showSources, setShowSources] = useState(false);
+    // 4. Source Toggle Handler (Deprecated, replaced by specific modals)
+    // const [showSources, setShowSources] = useState(false);
+
+    // Gemini Sparkle Icon SVG
+    const SparkleIcon = () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 4L14.4 9.6L20 12L14.4 14.4L12 20L9.6 14.4L4 12L9.6 9.6L12 4Z" fill="url(#sparkle_grad)" />
+            <defs>
+                <linearGradient id="sparkle_grad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#4285F4" />
+                    <stop offset="1" stopColor="#9B72CB" />
+                </linearGradient>
+            </defs>
+        </svg>
+    );
 
     return (
         <div className={`${styles.container} ${isSideChat ? styles.sideChatContainer : ''}`}>
             {/* Scrollable Content Area */}
             <div className={styles.contentArea}>
-                {!isSideChat && <h1 className={styles.queryTitle}>{initialQuery}</h1>}
-                {isSideChat && <div className={styles.sideChatQueryBubble}>{initialQuery}</div>}
+                {/* Header content removed per user request (Global Header handles it) */}
 
                 {loading ? (
                     <div className={styles.loadingState}>
                         <div className={styles.loadingSpinner}></div>
-                        <span className={styles.loadingText}>{loadingMessage}</span>
+                        <span className={styles.loadingText}>
+                            {initialQuery}에 대해 분석 중입니다...
+                        </span>
                     </div>
                 ) : (
-                    <>
-                        {/* Answer Tab */}
-                        {activeSection === 'answer' && (
-                            <>
-                                <div id="answer-section" className={styles.scrollSection}>
-                                    <AnswerSection
-                                        query={initialQuery}
-                                        answer={answer}
-                                        disclaimer={disclaimer}
-                                        sources={sources}
-                                        images={images}
-                                        onSourceClick={() => setActiveSection('sources')}
-                                    />
-                                </div>
-                                {/* <div className={styles.divider} /> */}
-                                {/* {related.length > 0 && <RelatedQuestions questions={related} />} */}
-                            </>
-                        )}
+                    <div className={styles.unifiedStream}>
+                        {/* Query Title in Content */}
+                        <div className={styles.queryDisplay}>
+                            {initialQuery}
+                        </div>
 
-                        {/* Sources Tab -> Links (Solutions) */}
-                        {activeSection === 'sources' && (
-                            <div className={styles.tabContent}>
-                                {/* Show links extracted from the answer first (The "Solutions") */}
-                                <SourcesSection
-                                    sources={(() => {
-                                        // 1. Extract links from the answer in real-time
-                                        const mdLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-                                        const extractedLinks = [];
-                                        let match;
-                                        if (answer) {
-                                            const activeAnswer = typeof answer === 'string' ? answer : "";
-                                            while ((match = mdLinkRegex.exec(activeAnswer)) !== null) {
-                                                extractedLinks.push({
-                                                    title: match[1],
-                                                    url: match[2],
-                                                    content: "답변에서 언급된 추천 솔루션입니다.",
-                                                    isSolution: true // Flag to highlight
-                                                });
-                                            }
-                                        }
+                        <AnswerSection
+                            query={initialQuery}
+                            answer={answer}
+                            disclaimer={disclaimer}
+                            sources={sources}
+                            images={images}
+                            onSourceClick={() => setViewingDetailedSources(true)}
+                        />
 
-                                        // 2. Combine with search sources (Deduplicate based on URL)
-                                        const uniqueUrls = new Set(extractedLinks.map(l => l.url));
-                                        const filteredSources = sources.filter(s => !uniqueUrls.has(s.url && s.link));
+                        {/* Sources & Related Questions removed per user request */}
 
-                                        // 3. Return combined list (Solutions first)
-                                        return [...extractedLinks, ...filteredSources];
-                                    })()}
-                                />
-                            </div>
-                        )}
-
-                        {/* Academic Tab */}
-                        {activeSection === 'academic' && (
-                            <div className={styles.tabContent}>
-                                <AcademicSection papers={academic} />
-                            </div>
-                        )}
-                    </>
+                        <div style={{ height: '120px' }}></div>
+                    </div>
                 )}
+
             </div>
 
-            {/* Bottom Sheet for Sources */}
-            {showSources && sources.length > 0 && (
-                <div className={styles.bottomSheetBackdrop} onClick={() => setShowSources(false)}>
-                    <div className={styles.bottomSheetContent} onClick={e => e.stopPropagation()}>
-                        <div className={styles.bottomSheetHeader}>
-                            <h3>참조 출처 ({sources.length})</h3>
-                            <button onClick={() => setShowSources(false)}>✕</button>
+            {/* Bottom Sheet for Web Sources */}
+            {
+                viewingDetailedSources && (
+                    <div className={styles.bottomSheetBackdrop} onClick={() => setViewingDetailedSources(false)}>
+                        <div className={styles.bottomSheetContent} onClick={e => e.stopPropagation()}>
+                            <div className={styles.bottomSheetHeader}>
+                                <h3>참조 출처 전체보기</h3>
+                                <button onClick={() => setViewingDetailedSources(false)}>✕</button>
+                            </div>
+                            <SourcesSection sources={sources} />
                         </div>
-                        <SourcesSection sources={sources} />
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {/* Sticky Search Footer - Only in Answer Tab */}
-            {activeSection === 'answer' && (
-                <div className={`${styles.stickySearchWrapper} ${isSideChat ? styles.sideChatSearch : ''}`}>
-                    <SearchBar onSearch={handleFollowUp} placeholder="후속 질문하기" dropUpMode={true} />
-                </div>
-            )}
-        </div>
+            {/* Bottom Sheet for Academic Papers */}
+            {
+                viewingDetailedAcademic && (
+                    <div className={styles.bottomSheetBackdrop} onClick={() => setViewingDetailedAcademic(false)}>
+                        <div className={styles.bottomSheetContent} onClick={e => e.stopPropagation()}>
+                            <div className={styles.bottomSheetHeader}>
+                                <h3>전문 임상 자료 전체보기</h3>
+                                <button onClick={() => setViewingDetailedAcademic(false)}>✕</button>
+                            </div>
+                            <AcademicSection papers={academic} />
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Sticky Search Footer - Always Visible in Unified Stream */}
+            <div className={`${styles.stickySearchWrapper} ${isSideChat ? styles.sideChatSearch : ''}`}>
+                <SearchBar onSearch={handleFollowUp} placeholder="이어지는 질문하기" dropUpMode={true} />
+            </div>
+        </div >
     );
 };
 

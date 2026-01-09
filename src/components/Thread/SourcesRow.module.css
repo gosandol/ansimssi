@@ -1,0 +1,118 @@
+/* Gemini Dark Theme Optimized SourcesRow */
+.rowContainer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    /* Subtle border */
+}
+
+.label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #E3E3E3;
+    /* Gemini text primary */
+    white-space: nowrap;
+}
+
+.sourcesList {
+    display: flex;
+    gap: 0.8rem;
+    flex: 1;
+    overflow-x: auto;
+    scrollbar-width: none;
+    align-items: center;
+}
+
+.sourcesList::-webkit-scrollbar {
+    display: none;
+}
+
+.sourceItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #1E1F20;
+    /* Gemini Surface */
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: fit-content;
+    max-width: 180px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.sourceItem:hover {
+    background: #2C2C2E;
+    border-color: #A8C7FA;
+    /* Accent on hover */
+}
+
+.favicon {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+}
+
+.sourceTitle {
+    font-size: 0.85rem;
+    color: #C4C7C5;
+    /* Gemini text secondary */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.sourceIndex {
+    display: none;
+    /* Clean look, no numbers needed in row */
+}
+
+.moreBadge {
+    font-size: 0.8rem;
+    color: #C4C7C5;
+    background: #1E1F20;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.moreBadge:hover {
+    background: #2C2C2E;
+}
+
+.viewAllBtn {
+    background: none;
+    border: none;
+    font-size: 0.85rem;
+    color: #A8C7FA;
+    /* Accent Color Link */
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-weight: 500;
+}
+
+.viewAllBtn:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .rowContainer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+    }
+
+    .viewAllBtn {
+        align-self: flex-end;
+    }
+}

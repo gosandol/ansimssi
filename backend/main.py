@@ -170,24 +170,28 @@ async def search(request: SearchRequest):
         
         # If the fetched prompt is the placeholder or fallback, we might want to ensure it has the core logic. 
         # But for now, let's assume the DB has the FULL prompt. 
-        # If DB returns the "Check admin" placeholder, we should probably fallback to a hardcoded SAFETY prompt here to avoid breaking the bot.
         if "System Prompt" in system_prompt_content and len(system_prompt_content) < 100:
              # It's likely the dummy text we inserted. Let's use the hardcoded one for now until User updates it in Admin.
              system_prompt = """You are Ansimssi (안심씨), a highly capable AI Assistant.
              
-             **CORE OBJECTIVE**: Provide "Gemini-level" comprehensive answers.
+             **STYLE & FORMATTING (CRITICAL)**:
+               - **Tone**: Professional, direct, helpful, and empathetic (like Gemini).
+               - **Structure**:
+                 1. Start IMMEDIATELY with the answer (No "Yes", "Here is...", "Based on...").
+                 2. Use **Bold headers** for sections.
+                 3. Use **Bulleted lists** for readability.
+                 4. Use **Numbered lists** only for steps or rankings.
+               - **Prohibitions**:
+                 - **DO NOT** add a "Reference" or "Source" list at the end (Frontend handles this).
+                 - **DO NOT** say "This information is based on...".
+                 - **DO NOT** add generic disclaimers like "Consult a doctor..." (System handles this).
              
-             **MEDICAL/HEALTH PROTOCOL (MANDATORY)**:
+             **MEDICAL/HEALTH PROTOCOL**:
                - IF query is Health/Medical => Set `disclaimer_type`="medical".
                - Append: "안심씨는 여러분의 AI 주치의로서 **새로닥터**를 통해 비대면 진료 서비스를 제공하고 있습니다. 전문의와 상담이 필요하신가요?"
              
-             **Links & References**:
-               - Use natural Markdown `[Link Text](url)`.
-               - Example: "You can find it at [Here](url)."
-             
              **Adaptive Closing**:
-               - Korean: Use "**💡 꿀팁:**".
-               - English: Use "**💡 Honey Tip:**".
+               - Korean: Use "**💡 꿀팁:**" for a final helpful tip.
              """
         else:
              system_prompt = system_prompt_content
@@ -205,14 +209,35 @@ async def search(request: SearchRequest):
 
         **Instructions**:
         - Answer the query using the context provided.
-        - If NO context is relevant, use your internal knowledge but mention you are doing so.
-        - Ensure "medical" disclaimer logic is followed if applicable.
+        - **Start directly** with the answer text (NO "Here is the answer").
+        - **Structure**:
+          1. **Summary Paragraph**: A brief, high-level overview (2-3 lines).
+          2. **Numbered Sections** (1. Title, 2. Title...):
+             - Use **Bold Beaded Bullets** (e.g., `- **Item**: Description`).
+        - **Prohibitions**:
+          - **NO** "Based on..." or "Source:" footers.
+          - **NO** "Caution:" or "Disclaimer:" footers (Standard medical warnings are handled by the system).
         
+        **One-Shot Example (Follow this Style)**:
+        Query: "What are good foods for a cold?"
+        Answer:
+        "When you catch a cold, it's important to consume foods that boost immunity and keep you hydrated. Warm fluids and vitamin-rich fruits are especially helpful.
+        
+        **1. Warm Fluids**
+        - **Honey Tea**: Soothes a sore throat and suppresses coughing.
+        - **Ginger Tea**: Warms the body and helps reduce inflammation.
+        
+        **2. Immunity Boosters**
+        - **Pears**: Contains luteolin which helps with coughs and phlegm.
+        - **Citrus**: Vitamin C helps recovery from fatigue.
+        
+        **💡 꿀팁:** A hot shower can also help relieve nasal congestion."
+
         OUTPUT FORMAT (JSON ONLY):
         {{
-            "answer": "Your comprehensive Korean Markdown answer...",
+            "answer": "Your comprehensive Korean Markdown answer matching the One-Shot Style...",
             "disclaimer_type": "medical" | "none", 
-            "related_questions": ["Q1", "Q2", "Q3"]
+            "related_questions": ["질문1?", "질문2?", "질문3?"]
         }}
         """
         
@@ -226,13 +251,21 @@ async def search(request: SearchRequest):
         DISCLAIMER_MEDICAL = "본 답변은 보건복지부의 비의료 건강관리서비스 가이드라인을 준수하며, 의학적 진단, 치료, 처방을 대신할 수 없습니다. 제공되는 정보는 참고용이며, 정확한 의학적 소견은 반드시 전문의와 상의하시기 바랍니다."
         DISCLAIMER_GENERAL = "제공된 정보는 참고용이며, 정확하지 않을 수 있습니다."
 
+        # Default values
+        answer = ""
+        disclaimer = ""
+        related_questions = []
+
         try:
             response_json = json.loads(response.text)
             answer = response_json.get("answer", "")
             dis_type = response_json.get("disclaimer_type", "general")
+            # Extract Related Questions from LLM
+            related_questions = response_json.get("related_questions", [])
             
             if dis_type == "medical":
-                disclaimer = DISCLAIMER_MEDICAL
+                # User requested removal of forced disclaimer
+                disclaimer = "" 
             else:
                 disclaimer = "" # No disclaimer for general topics to keep it clean
                 
@@ -240,13 +273,15 @@ async def search(request: SearchRequest):
             print("Warning: Failed to parse JSON, falling back to raw text")
             answer = response.text
             disclaimer = "" # Fallback: no disclaimer to be safe/clean
+            related_questions = []
 
-        # 3. Related Questions (Mock for now to save latency/tokens)
-        related_questions = [
-            f"More details about {request.query}",
-            f"Safety tips for {request.query}",
-            f"Recent news on {request.query}"
-        ]
+        # Fallback if LLM returns empty related questions
+        if not related_questions:
+             related_questions = [
+                f"{request.query}에 대해 더 자세히 알려줘",
+                f"{request.query} 주의사항은?",
+                "관련된 최신 뉴스는?"
+            ]
 
         # Map sources
         sources = [

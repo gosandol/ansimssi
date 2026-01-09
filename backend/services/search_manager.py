@@ -158,13 +158,36 @@ class SearchManager:
         ]
         
         # Wait for ALL to complete (Enrichment Strategy)
-        # We accept a slightly higher latency (e.g. max 4s) for significantly better quality.
-        done, pending = await asyncio.wait(tasks, timeout=4.5) 
+        # VOICE-FIRST OPTIMIZATION: Adaptive Latency
+        # 1. Primary Wait: 2.0s (Acceptable voice delay)
+        done, pending = await asyncio.wait(tasks, timeout=2.0)
         
         aggregated_results = []
         seen_urls = set()
         
-        # Collect results from all successful engines
+        # Check yield from first wave
+        initial_yield = 0
+        for task in done:
+            try:
+                res = task.result()
+                if res and res.get('results'):
+                    initial_yield += len(res['results'])
+            except: pass
+            
+        # 2. Decision Gate: Do we have enough?
+        # If we have < 4 results, it's too thin. Pay the latency cost for intelligence.
+        # If we have >= 4, SPEED WINS.
+        if initial_yield < 4 and len(pending) > 0:
+            print(f"⚠️ Low yield ({initial_yield}) after 2s. Extending wait for deep research...")
+            second_wave_done, second_wave_pending = await asyncio.wait(pending, timeout=2.0)
+            
+            # Meritge second wave into done
+            done = done.union(second_wave_done)
+            pending = second_wave_pending # Remainder are truly slow/dead
+        else:
+            print(f"⚡️ Voice Speed Success: {initial_yield} results in <2.0s. Proceeding.")
+        
+        # Collect results from all successful engines (merged from both waves)
         for task in done:
             try:
                 res = task.result()
@@ -187,7 +210,7 @@ class SearchManager:
             except Exception as e:
                 print(f"Task Error during aggregation: {e}")
                 
-        # Cancel any stragglers
+        # Cancel any stragglers (Too slow for voice)
         for t in pending: t.cancel()
 
         # Tier 5: Emergency Fallback if ABSOLUTELY nothing found

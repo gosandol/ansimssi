@@ -5,10 +5,7 @@ import styles from './LoginModal.module.css';
 import { supabase } from '../../lib/supabaseClient';
 import AnsimssiLogo from '../AnsimssiLogo';
 
-import { useNavigate } from 'react-router-dom';
-
 const LoginModal = ({ onClose }) => {
-    const navigate = useNavigate();
 
     const handleLogin = async (provider) => {
         try {
@@ -25,7 +22,10 @@ const LoginModal = ({ onClose }) => {
     };
 
     const handleLinkClick = (path) => {
-        navigate(path);
+        // Manual routing to support App.jsx's custom router (no React Router)
+        window.history.pushState({}, '', path);
+        // Trigger popstate event so App.jsx catches the URL change
+        window.dispatchEvent(new PopStateEvent('popstate'));
         onClose();
     };
 

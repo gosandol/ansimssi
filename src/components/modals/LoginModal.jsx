@@ -5,7 +5,10 @@ import styles from './LoginModal.module.css';
 import { supabase } from '../../lib/supabaseClient';
 import AnsimssiLogo from '../AnsimssiLogo';
 
+import { useNavigate } from 'react-router-dom';
+
 const LoginModal = ({ onClose }) => {
+    const navigate = useNavigate();
 
     const handleLogin = async (provider) => {
         try {
@@ -19,6 +22,11 @@ const LoginModal = ({ onClose }) => {
         } catch (err) {
             console.error('Unexpected error:', err);
         }
+    };
+
+    const handleLinkClick = (path) => {
+        navigate(path);
+        onClose();
     };
 
     return (
@@ -74,12 +82,12 @@ const LoginModal = ({ onClose }) => {
                     </div>
 
                     <div className={styles.footer}>
-                        <a href="#">싱글 사인온(SSO)</a>
+                        <span onClick={() => handleLinkClick('/sso')} style={{ cursor: 'pointer' }}>싱글 사인온(SSO)</span>
                     </div>
 
                     <div className={styles.bottomTerms}>
-                        <a href="#">개인정보 보호정책</a>
-                        <a href="#">서비스 이용 약관</a>
+                        <span onClick={() => handleLinkClick('/privacy')} style={{ cursor: 'pointer' }}>개인정보 보호정책</span>
+                        <span onClick={() => handleLinkClick('/terms')} style={{ cursor: 'pointer' }}>서비스 이용 약관</span>
                     </div>
                 </div>
             </div>

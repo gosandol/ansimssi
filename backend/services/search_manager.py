@@ -1,5 +1,6 @@
 import os
 from tavily import TavilyClient
+import urllib.parse
 from .knowledge_base import KnowledgeBase
 
 class SearchManager:
@@ -410,19 +411,33 @@ class SearchManager:
             ]
             
         else:
-            # Geneic Health / Default Fallback (Safe Portals)
-            print("Using Generic Health Mock Data")
+            # Dynamic Fallback: Generate valid search links for the specific query
+            # This ensures 100% relevance even if we don't have a specific mock entry.
+            print(f"Using Dynamic Search Fallback for: {query}")
+            query_encoded = urllib.parse.quote_plus(query)
             results = [
-                {"title": "국가건강정보포털 - 알기 쉬운 의학정보", "url": "https://health.kdca.go.kr", "content": "질병관리청이 제공하는 검증된 건강 정보. 질병, 증상, 예방접종, 건강검진 등 다양한 의학 정보를 검색할 수 있습니다."},
-                {"title": "서울아산병원 질환백과", "url": "https://www.amc.seoul.kr/asan/healthinfo/disease/diseaseList.do", "content": "서울아산병원 전문 의료진이 검수한 질환, 검사, 시술 정보. 증상별 자가 진단 및 치료법 안내."},
-                {"title": "건강보험심사평가원 - 내가 먹는 약 한눈에", "url": "https://www.hira.or.kr", "content": "내가 처방받은 의약품의 효능, 효과, 복용법을 확인하세요. 중복 처방 및 병용 금기 약물 정보도 제공합니다."},
-                {"title": "응급의료포털 E-Gen", "url": "https://www.e-gen.or.kr", "content": "내 주변 응급실, 병원, 약국 찾기. 응급처치 요령 및 자동심장충격기(AED) 위치 정보 제공."}
+                {
+                    "title": f"'{query}' 관련 최신 연구 및 임상 정보 (Google Scholar)",
+                    "url": f"https://scholar.google.co.kr/scholar?q={query_encoded}",
+                    "content": f"구글 학술 검색에서 '{query}'에 대한 전문적인 논문과 연구 자료를 즉시 확인하세요."
+                },
+                {
+                    "title": f"'{query}' 건강 정보 더보기 (Naver 지식백과)",
+                    "url": f"https://terms.naver.com/search.naver?query={query_encoded}",
+                    "content": f"네이버 지식백과에서 검증된 '{query}' 관련 건강 정보를 찾아보세요."
+                },
+                {
+                    "title": f"질병관리청 국가건강정보포털 검색: '{query}'",
+                    "url": f"https://health.kdca.go.kr/healthinfo/biz/health/search/search.do?searchTxt={query_encoded}",
+                    "content": "국가 검증 의학 정보를 제공하는 질병관리청 포털에서 관련 정보를 검색합니다."
+                }
             ]
+            # Generic safe images if query specific ones aren't available
             images = [
                  "https://health.kdca.go.kr/healthinfo/biz/health/file/fileDownload.do?atchFileId=FILE_000000000000100&fileSn=1",
-                 "https://www.amc.seoul.kr/asan/images/common/logo_asan_og.jpg",
-                 "https://www.hira.or.kr/images/common/logo.png",
-                 "https://www.e-gen.or.kr/images/common/logo.png"
+                 "https://ssl.pstatic.net/static/terms/terms_logo.png",
+                 "https://scholar.google.co.kr/intl/ko/scholar/images/1x/scholar_logo_64dp.png",
+                 "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"
             ]
 
         return results, images

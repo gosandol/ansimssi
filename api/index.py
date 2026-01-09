@@ -212,34 +212,44 @@ class InlineSearchManager:
         return None
 
     async def search(self, query):
-        print(f"🚀 Starting 5-Tier Search for: {query}")
+        print(f"🚀 Starting 5-Tier Parallel Search (Race) for: {query}")
         
-        aggregated_results = []
-        images = []
-        source_engine = "none"
+        # Define tasks for parallel execution
+        tasks = [
+            self._search_serpapi(query),
+            self._search_tavily(query),
+            self._search_exa(query),
+            self._search_brave(query)
+        ]
 
-        # 1. Tier 1: SerpApi
-        res = await self._search_serpapi(query)
-        if res and res.get('results'):
-            return res['results'], res['images'], "serpapi"
+        # Execute all searches concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # 2. Tier 2: Tavily
-        res = await self._search_tavily(query)
-        if res and res.get('results'):
-            return res['results'], res.get('images', []), "tavily"
+        tier1_res, tier2_res, tier3_res, tier4_res = results
 
-        # 3. Tier 3: Exa
-        res = await self._search_exa(query)
-        if res and res.get('results'):
-            return res['results'], res.get('images', []), "exa"
+        # Selection Logic: Priority 1 -> 4
+        # 1. Google (SerpApi)
+        if not isinstance(tier1_res, Exception) and tier1_res and tier1_res.get('results'):
+            print("🏆 Winner: Tier 1 (Google)")
+            return tier1_res['results'], tier1_res['images'], "serpapi"
 
-        # 4. Tier 4: Brave
-        res = await self._search_brave(query)
-        if res and res.get('results'):
-            return res['results'], res.get('images', []), "brave"
+        # 2. Tavily
+        if not isinstance(tier2_res, Exception) and tier2_res and tier2_res.get('results'):
+            print("🏆 Winner: Tier 2 (Tavily)")
+            return tier2_res['results'], tier2_res.get('images', []), "tavily"
 
-        # 5. Tier 5: Mock (Emergency)
-        print("🚑 Tier 5: Entering Emergency Mock Fallback...")
+        # 3. Exa
+        if not isinstance(tier3_res, Exception) and tier3_res and tier3_res.get('results'):
+             print("🏆 Winner: Tier 3 (Exa)")
+             return tier3_res['results'], tier3_res.get('images', []), "exa"
+
+        # 4. Brave
+        if not isinstance(tier4_res, Exception) and tier4_res and tier4_res.get('results'):
+             print("🏆 Winner: Tier 4 (Brave)")
+             return tier4_res['results'], tier4_res.get('images', []), "brave"
+
+        # 5. Fallback (Mock)
+        print("🚑 All tiers failed. Entering Emergency Mock Fallback...")
         source_engine = "mock"
         aggregated_results = [
                 {"title": f"'{query}' 관련 정보 (Google Scholar)", "url": f"https://scholar.google.co.kr/scholar?q={query}", "content": "전문적인 논문과 연구 자료를 확인하세요."},

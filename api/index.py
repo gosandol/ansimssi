@@ -279,19 +279,10 @@ class SearchRequest(BaseModel):
         extra = "ignore"
 
 @app.post("/api/search")
+@app.post("/api/search")
 async def search(request: SearchRequest):
-    if not model:
-        # Check why model is missing
-        error_msg = "Gemini Model Failed."
-        if import_status.get('google-genai') != "OK":
-             error_msg = f"Import Error: {import_status.get('google-genai')}"
-        elif not gemini_api_key:
-             error_msg = "Missing GEMINI_API_KEY env var."
-        
-        async def error_generator():
-            yield json.dumps({"type": "error", "message": error_msg}) + "\n"
-        return StreamingResponse(error_generator(), media_type="application/x-ndjson")
-
+    # REMOVED BLOCKER: Allow search to proceed even without Gemini Model
+    
     async def event_generator():
         try:
             if any(k in request.query.replace(" ", "") for k in ["네연결해줘", "비대면진료", "새로닥터"]):
@@ -303,27 +294,38 @@ async def search(request: SearchRequest):
             for tag in ["[병원검색]", "[약국검색]", "[건강백과]"]:
                 clean_query = clean_query.replace(tag, "").strip()
 
+            # 1. Perform 5-Tier Search (Race Mode)
             results, images, source_engine = await search_manager.search(clean_query)
+            
+            # 2. Add Academic Papers (Tier 3/5 Extension)
             academic_papers = search_manager.search_academic(clean_query)
 
             frontend_sources = [{"title": r['title'], "url": r.get('url', r.get('link', '#')), "content": r.get('content', '')[:200]} for r in results[:5] if 'title' in r]
 
+            # 3. Yield Metadata (Sources/Images) immediately - VISIBLE RESULT
             yield json.dumps({"type": "meta", "sources": frontend_sources, "images": images, "disclaimer": "", "academic": academic_papers}) + "\n"
 
-            search_context = "\n\n".join([f"Source '{r['title']}': {r.get('content','')}" for r in results[:5]])
-            system_prompt = fetch_system_prompt()
-            today_date = datetime.now().strftime("%Y-%m-%d")
-            
-            prompt = f"{system_prompt}\n\nQuery: {request.query}\nContext: {search_context}\nToday: {today_date}\n\nSTRICT: 1. Intro(Summary) 2. Body(Numbered) 3. Caution 4. Closing."
+            # 4. Generate AI Summary (If Model exists)
+            if model:
+                search_context = "\n\n".join([f"Source '{r['title']}': {r.get('content','')}" for r in results[:5]])
+                system_prompt = fetch_system_prompt()
+                today_date = datetime.now().strftime("%Y-%m-%d")
+                
+                prompt = f"{system_prompt}\n\nQuery: {request.query}\nContext: {search_context}\nToday: {today_date}\n\nSTRICT: 1. Intro(Summary) 2. Body(Numbered) 3. Caution 4. Closing."
 
-            response_stream = model.generate_content(prompt, stream=True)
-            for chunk in response_stream:
-                if chunk.text:
-                    yield json.dumps({"type": "content", "delta": chunk.text}) + "\n"
+                response_stream = model.generate_content(prompt, stream=True)
+                for chunk in response_stream:
+                    if chunk.text:
+                        yield json.dumps({"type": "content", "delta": chunk.text}) + "\n"
+            else:
+                # Fallback if Gemini is dead
+                fallback_msg = "⚠️ AI 요약 모델(Gemini)에 연결할 수 없습니다. 대신 위 검색 결과를 참고해주세요."
+                yield json.dumps({"type": "content", "delta": fallback_msg}) + "\n"
 
             yield json.dumps({"type": "done", "related_questions": ["더 자세히 알려줘", "다른 정보는?"]}) + "\n"
 
         except Exception as e:
+            print(f"Search Error: {e}")
             yield json.dumps({"type": "error", "message": str(e)}) + "\n"
 
     return StreamingResponse(event_generator(), media_type="application/x-ndjson")

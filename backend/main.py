@@ -182,31 +182,46 @@ async def search(request: SearchRequest):
             Query: {request.query}
             Context: {full_context}
 
-            **STRICT Format Instruction (3-Part Structure)**:
+            **STRICT Format Instruction (Gemini Visual Blueprint)**:
+            Use `---` separators between sections.
 
-            **Part 1: The Answer (Main Body)**
-            - Summary: Start directly with the answer (1-2 lines).
-            - **Structure**: YOU MUST USE NUMBERED HEADERS for main points (e.g., **1. Step One**, **2. Step Two**).
-            - **Details**: Use beaded bullets inside the numbered sections.
-            - Tone: Professional but friendly (Gemini Persona).
+            **1. The Intro (Summary)**
+            - Start directly with a brief, empathetic summary (1-2 lines).
+            - **IMMEDIATELY FOLLOW with a horizontal rule (`---`).**
 
-            **Part 2: "⚠️ 이럴 때는..." (Conditional Caution)**
-            - IF AND ONLY IF medical/safety/troubleshooting context:
-            - Add a section titled: **"⚠️ 이럴 때는 반드시 전문가와 상담하세요"** (or similar context-appropriate header).
-            - List 2-3 critical warning signs.
-            - Use a bulleted list for this section.
-            - If not applicable, OMIT this part.
+            **2. The Body (Main Advice)**
+            - Use **Numbered Headers** (e.g., **1. Header Name**) for main points.
+            - Use beaded bullets inside sections.
+            - Max 5 sections.
+            - **IMMEDIATELY FOLLOW with a horizontal rule (`---`).**
 
-            **Part 3: Conversational Closing (Interactive)**
-            - END with a specific, empathetic question/prompt to continue the dialogue.
-            - Example: "지금 어떤 증상이 가장 심하신가요?", "어떤 부분이 가장 궁금하신가요?", "또 다른 궁금한 점이 있으신가요?"
-            - Do NOT use generic closings. Be context-specific.
+            **3. The Caution (⚠️)**
+            - IF AND ONLY IF medical/safety context:
+            - **Title**: **"⚠️ 이럴 때는 반드시 전문가와 상담하세요"**
+            - List critical warning signs.
+            - If not medical/safety, OMIT this entire section (including the divider above if it separates nothing else significant, but usually keep the divider after body).
+
+            **4. The Closing (Interactive)**
+            - A specific, empathetic question to continue the dialogue.
+            - Example: "지금 어떤 증상이 가장 심하신가요?"
+
+            **Output Logic**:
+            [Summary]
+            
+            ---
+            
+            [Numbered Body 1...5]
+            
+            ---
+            
+            [Caution if applicable]
+            [Closing Question]
 
             **Prohibitions**:
-            - NO "Based on the search results..." start.
-            - NO JSON output.
-            - NO "Related Questions" list (handled by UI).
-            - NO Markdown code blocks for the answer text itself.
+            - NO "Based on..." intro.
+            - NO JSON.
+            - NO "Related Questions" text list (UI handles it).
+            - NO code blocks.
 
             OUTPUT FORMAT: Raw Markdown text only.
             """

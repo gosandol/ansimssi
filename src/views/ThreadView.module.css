@@ -2,8 +2,8 @@
 .container {
     --gemini-bg: var(--bg-primary);
     --gemini-surface: var(--bg-secondary);
-    --gemini-text-primary: #E3E3E3;
-    --gemini-text-secondary: #C4C7C5;
+    --gemini-text-primary: var(--text-primary);
+    --gemini-text-secondary: var(--text-secondary);
     --gemini-accent: #A8C7FA;
     --gemini-purple: #D0BCFF;
     --gemini-font: 'Google Sans', 'Inter', -apple-system, sans-serif;

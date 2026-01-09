@@ -8,7 +8,17 @@ import { supabase } from './supabaseClient';
 export const createThread = async (title) => {
     try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('User not logged in');
+
+        // GUEST MODE: Return ephemeral thread object
+        if (!user) {
+            console.log('Guest User: Creating ephemeral thread');
+            return {
+                id: 'guest_' + Date.now(),
+                user_id: 'guest',
+                title: title,
+                created_at: new Date().toISOString()
+            };
+        }
 
         const { data, error } = await supabase
             .from('threads')
@@ -20,7 +30,11 @@ export const createThread = async (title) => {
         return data;
     } catch (error) {
         console.error('Error creating thread:', error);
-        return null;
+        // Fallback for any error to allow UI to proceed
+        return {
+            id: 'guest_fallback_' + Date.now(),
+            title: title
+        };
     }
 };
 
@@ -34,6 +48,11 @@ export const createThread = async (title) => {
  */
 export const addMessage = async (threadId, role, content, sources = null) => {
     try {
+        // GUEST MODE: Skip DB insert
+        if (threadId && threadId.toString().startsWith('guest_')) {
+            return true;
+        }
+
         const { error } = await supabase
             .from('messages')
             .insert([{

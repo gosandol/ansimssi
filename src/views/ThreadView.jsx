@@ -216,14 +216,15 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
                             onSourceClick={() => setViewingDetailedSources(true)}
                         />
 
-                        <SourcesRow
+                        {/* SourcesRow and RelatedQuestions Hidden per Gemini Persona (Minimalist) */}
+                        {/* <SourcesRow
                             sources={sources}
                             onClick={() => setViewingDetailedSources(true)}
-                        />
+                        /> */}
 
-                        {related && related.length > 0 && (
+                        {/* {related && related.length > 0 && (
                             <RelatedQuestions questions={related} />
-                        )}
+                        )} */}
 
                         <div style={{ height: '120px' }}></div>
                     </div>

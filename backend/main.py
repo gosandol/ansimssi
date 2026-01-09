@@ -144,6 +144,15 @@ async def search(request: SearchRequest):
             results, images, source_engine = await search_manager.search(search_query)
             academic_papers = search_manager.search_academic(search_query)
 
+            # [PERSONA LOGIC] Dynamic Disclaimer Detection
+            # Triggers if query contains medical keywords
+            medical_keywords = ["약", "질병", "치료", "증상", "복용", "수술", "병원", "진료", "부작용", "효능", "통증"]
+            has_medical_intent = any(k in request.query for k in medical_keywords)
+            
+            disclaimer_text = ""
+            if has_medical_intent:
+                disclaimer_text = "참고용으로만 사용하시기 바랍니다. 의학적인 자문이나 진단이 필요한 경우 전문가에게 문의하세요."
+
             # Map sources for Frontend
             frontend_sources = [
                 {"title": r['title'], "url": r.get('url', r.get('link', '#')), "content": r['content']}
@@ -157,7 +166,7 @@ async def search(request: SearchRequest):
                 "type": "meta",
                 "sources": frontend_sources,
                 "images": images, 
-                "disclaimer": "", # No forced disclaimer
+                "disclaimer": disclaimer_text, 
                 "academic": academic_papers
             }) + "\n"
 
@@ -193,13 +202,12 @@ async def search(request: SearchRequest):
             - Use **Numbered Headers** (e.g., **1. Header Name**) for main points.
             - Use beaded bullets inside sections.
             - Max 5 sections.
-            - **IMMEDIATELY FOLLOW with a horizontal rule (`---`).**
 
             **3. The Caution (⚠️)**
             - IF AND ONLY IF medical/safety context:
-            - **Title**: **"⚠️ 이럴 때는 반드시 전문가와 상담하세요"**
+            - **Title**: "⚠️ 이럴 때는 반드시 전문가와 상담하세요" (Exact string, NO Markdown)
             - List critical warning signs.
-            - If not medical/safety, OMIT this entire section (including the divider above if it separates nothing else significant, but usually keep the divider after body).
+            - If not medical/safety, OMIT this entire section.
 
             **4. The Closing (Interactive)**
             - A specific, empathetic question to continue the dialogue.
@@ -212,15 +220,21 @@ async def search(request: SearchRequest):
             
             [Numbered Body 1...5]
             
-            ---
-            
             [Caution if applicable]
             [Closing Question]
 
-            **Tone & Style**:
-            - **Professional & Deep**: Do not just summarize. Synthesize the logic, cause-and-effect, and specific details from the sources.
-            - **Context-Rich**: Use specific numbers, statistics, and professional terminology found in the context.
-            - **No Fluff**: Avoid generic opening sentences like "Here is the information." Dive straight into the answer.
+            **Tone & Style (Gemini's Smart Sibling)**:
+            - **Voice**: Professional but friendly ('해요' style). Avoid stiff '다/까' endings unless defining terms. Use '대신', '하지만' for smooth flow.
+            - **Closing Phrases**: ALWAYS end with one of these patterns:
+              - "...알려드릴 수 있습니다."
+              - "...연결해드릴까요?"
+              - "...도와드릴까요?"
+            - **Professional & Deep**: Synthesize logic/cause-effect. Use specific numbers/stats.
+            - **Zero Fluff**: Start immediately. No "Here is the answer".
+
+            **Safety & Medical**:
+            - If medical/safety context, use the "3. The Caution" section strictly.
+            - **Never** say "I am not a doctor" repetitively in the body. Use the disclaimer section.
 
             OUTPUT FORMAT: Raw Markdown text only.
             """

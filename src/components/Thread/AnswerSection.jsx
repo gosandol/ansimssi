@@ -3,13 +3,28 @@ import { Copy, Share, RotateCcw, ThumbsUp, ThumbsDown, ChevronDown, ChevronRight
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from './ThreadComponents.module.css';
+import MedicalWarningIcon from '../icons/MedicalWarningIcon';
+
+import AnsimssiLogo from '../AnsimssiLogo'; // Correct path check: Thread/.. -> components. -> AnsimssiLogo
 
 const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, onSourceClick }) => {
     const [showProcess, setShowProcess] = React.useState(false);
 
     return (
         <div className={styles.sectionContainer}>
-            {/* Header Removed per User Request: Clean Start directly with Answer */}
+            {/* 1. Top Disclaimer Banner (Gemini Style) */}
+            {disclaimer && (
+                <div className={styles.disclaimerBanner}>
+                    <MedicalWarningIcon size={16} color="var(--text-secondary)" className={styles.disclaimerIcon} />
+                    <span>{disclaimer}</span>
+                </div>
+            )}
+
+            {/* 2. Answer Header with Ansimssi Bubble Icon */}
+
+            <div className={styles.answerHeader}>
+                <AnsimssiLogo size={32} className={styles.mainIcon} />
+            </div>
 
             {/* Inline Primary Image Removed for Readability - User Request */}
 
@@ -20,45 +35,62 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
                 </div>
             )} */}
 
-            {/* Answer Content - Split for Doctor's Recommendation */}
+            {/* Answer Content - Parsed for Gemini Structure */}
             {(() => {
-                // Defensive coding: Ensure answer is a string
                 const safeAnswer = (typeof answer === 'string') ? answer : '';
 
-                const recommendationMarker = "**안심씨의 최종 권고:**";
-                const parts = safeAnswer.split(recommendationMarker);
-                const mainBody = parts[0];
-                const recommendation = parts.length > 1 ? parts[1] : null;
+                // 1. Detect Caution Section (Medical/Safety)
+                // Keyword match based on Backend Prompt
+                const cautionHeaderPattern = /⚠️\s*이럴 때는 반드시 전문가와 상담하세요/i;
+                const cautionMatch = safeAnswer.match(cautionHeaderPattern);
+
+                let mainContent = safeAnswer;
+                let cautionContent = null;
+                let closingContent = null;
+
+                if (cautionMatch) {
+                    const splitIndex = cautionMatch.index;
+                    // Everything before the warning
+                    mainContent = safeAnswer.substring(0, splitIndex);
+                    // Remove trailing '---' if prompt inserted it
+                    mainContent = mainContent.replace(/---\s*$/, '').trim();
+
+                    // Everything after the warning header
+                    const rawCaution = safeAnswer.substring(splitIndex + cautionMatch[0].length);
+                    cautionContent = rawCaution.trim();
+
+                    // Optional: Try to split Closing from Caution if possible
+                    // However, keeping them together in the warning box is safer for medical context
+                    // unless we have a specific delimiter for Closing.
+                }
 
                 return (
                     <>
+                        {/* Main Body (Intro + Numbered List) */}
                         <div className={`${styles.answerContent} ${styles.markdownBody}`}>
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                            >
-                                {mainBody}
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {mainContent}
                             </ReactMarkdown>
                         </div>
 
-                        {recommendation && (
-                            <div className={styles.doctorCallout}>
-                                <div className={styles.calloutHeader}>
-                                    <span className={styles.doctorIcon}>🩺</span>
-                                    <strong>안심씨의 최종 권고</strong>
+                        {/* Custom Medical Caution Box */}
+                        {cautionContent && (
+                            <div className={styles.medicalCaution}>
+                                <div className={styles.cautionHeader}>
+                                    <MedicalWarningIcon size={20} color="#F59E0B" />
+                                    <span>이럴 때는 반드시 전문가와 상담하세요</span>
                                 </div>
-                                <div className={styles.calloutContent}>
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{recommendation}</ReactMarkdown>
+                                <div className={styles.cautionBody}>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {cautionContent}
+                                    </ReactMarkdown>
                                 </div>
                             </div>
                         )}
                     </>
                 );
             })()}
-
-            {/* Dynamic Disclaimer */}
-
-
-
+            {/* Dynamic Disclaimer logic handled in IIFE above */}
 
             <div className={styles.answerActions}>
                 {/* Gemini Style Action Row: [Like] [Dislike] [Copy] [Share] [Google] [More] */}
@@ -87,7 +119,7 @@ const AnswerSection = ({ query, answer, sources = [], images = [], disclaimer, o
                     <MoreVertical size={19} />
                 </button>
             </div>
-        </div>
+        </div >
     );
 };
 

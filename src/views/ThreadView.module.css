@@ -70,28 +70,59 @@
     }
 }
 
+/* Improved Loading State */
 .loadingState {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    color: var(--text-secondary);
-    font-style: italic;
-    animation: pulse 1.5s infinite;
+    justify-content: center;
+    gap: 1.5rem;
+    color: var(--text-tertiary);
+    margin-top: 4rem;
+    animation: fadeIn 0.5s ease-out;
 }
 
-@keyframes pulse {
-    0% {
-        opacity: 0.5;
+.loadingSpinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(82, 219, 255, 0.2);
+    border-radius: 50%;
+    border-top-color: var(--accent-primary);
+    animation: spin 1s ease-in-out infinite;
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+}
+
+.loadingText {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.5;
+    animation: pulseText 2s infinite ease-in-out;
+    max-width: 80%;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulseText {
+
+    0%,
+    100% {
+        opacity: 0.8;
+        transform: scale(1);
     }
 
     50% {
         opacity: 1;
-    }
-
-    100% {
-        opacity: 0.5;
+        transform: scale(1.02);
     }
 }
+
+/* @keyframes pulse removed since we have custom pulseText */
 
 /* Bottom Sheet Styles */
 .bottomSheetBackdrop {

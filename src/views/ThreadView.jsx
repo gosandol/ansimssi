@@ -11,10 +11,16 @@ import { createThread, addMessage } from '../lib/db';
 import styles from './ThreadView.module.css';
 import { API_BASE_URL } from '../lib/api_config';
 
+import { useFamily } from '../context/FamilyContext';
+
 const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiveSection, isSideChat = false }) => {
     // Mock Data Generation based on query
     const [loading, setLoading] = useState(true);
     const [threadId, setThreadId] = useState(null);
+
+    // Context for Personalization
+    const { currentProfile } = useFamily();
+    const [loadingMessage, setLoadingMessage] = useState("분석 중...");
 
     const [sources, setSources] = useState([]);
     const [images, setImages] = useState([]);
@@ -26,6 +32,31 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
     // Removed local activeSection state since it's now passed from props
 
     const fetchedRef = React.useRef(false);
+
+    // Adaptive Loading Message Timer
+    useEffect(() => {
+        let timer1, timer2;
+        if (loading) {
+            setLoadingMessage("빠른 답변을 생성하고 있습니다...");
+
+            // Phase 1: > 2.0s (Voice Warning Threshold)
+            timer1 = setTimeout(() => {
+                const name = currentProfile?.name || "회원";
+                setLoadingMessage(`${name}님을 위한 최고의 답을 찾고 있습니다...`);
+            }, 2000);
+
+            // Phase 2: > 4.5s (Deep Research)
+            timer2 = setTimeout(() => {
+                setLoadingMessage("여러 전문 자료를 비교 분석 중입니다. 잠시만요...");
+            }, 4500);
+        } else {
+            setLoadingMessage("완료!");
+        }
+        return () => {
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+        };
+    }, [loading, currentProfile]);
 
     useEffect(() => {
         // Reset state for new query
@@ -130,7 +161,8 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
 
                 {loading ? (
                     <div className={styles.loadingState}>
-                        <span>생성 중...</span>
+                        <div className={styles.loadingSpinner}></div>
+                        <span className={styles.loadingText}>{loadingMessage}</span>
                     </div>
                 ) : (
                     <>

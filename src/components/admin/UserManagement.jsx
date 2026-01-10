@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { User, Shield, Calendar, Clock, MoreHorizontal } from 'lucide-react';
-import { API_BASE_URL } from '../../lib/api_config';
+import { supabase } from '../../lib/supabaseClient';
 import styles from './UserManagement.module.css';
 
 const UserManagement = () => {
@@ -15,13 +15,17 @@ const UserManagement = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/users`);
-            if (!response.ok) throw new Error('Failed to fetch users');
-            const data = await response.json();
-            setUsers(data.users || []);
+            // Fetch directly from profiles table
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (error) throw error;
+            setUsers(data || []);
         } catch (err) {
             console.error(err);
-            setError("유저 목록을 불러오지 못했습니다.");
+            setError("유저 목록을 불러오지 못했습니다: " + err.message);
         } finally {
             setLoading(false);
         }
@@ -57,42 +61,32 @@ const UserManagement = () => {
                         <tr>
                             <th>사용자</th>
                             <th>가입일</th>
-                            <th>마지막 로그인</th>
+                            <th>가입 경로</th>
+                            <th>이메일</th>
                             <th>권한</th>
                             <th>관리</th>
                         </tr>
                     </thead>
                     <tbody>
                         {users.map((user) => {
-                            const meta = user.user_metadata || {};
-                            const name = meta.full_name || meta.name || '알 수 없음';
-                            const avatar = meta.avatar_url;
-                            // Check admin in app_metadata if available, or just visual for now
-                            // Note: Real admin status is in 'profiles' table which we might need to join, 
-                            // but for now we can infer from email or app_metadata if set.
-                            const isAdmin = user.app_metadata?.is_admin || user.user_metadata?.is_admin;
-                            // Note: We are using a simplified check for now. Real implementation needs a backend endpoint to update roles.
-                            // But since we have a direct Supabase client in frontend (though effectively backend-side for `profiles`), 
-                            // we can try updating the 'profiles' table if RLS allows, or use an RPC.
-                            // Given the architecture, we should probably add a backend endpoint for this or just use the profiles table update if the current user is an admin.
-                            // Let's assume we can update 'profiles' for now since we are logged in as admin (bypassed).
+                            const name = user.full_name || '이름 없음';
+                            const avatar = user.avatar_url;
+                            const email = user.email || '-';
+                            const isAdmin = user.is_admin;
+                            const provider = user.provider || 'email';
 
                             const toggleAdmin = async () => {
                                 if (!confirm(`${name}님의 관리자 권한을 변경하시겠습니까?`)) return;
 
                                 try {
-                                    // Update profiles table
                                     const { error } = await supabase
                                         .from('profiles')
-                                        .update({ is_admin: !isAdmin }) // Toggle logic depends on current state from DB, ideally we fetch it. 
-                                        // But here we rely on the list state. 
-                                        // Actually `users` from API doesn't have is_admin from profiles joined yet.
-                                        // We need to fix the API to return is_admin from profiles.
+                                        .update({ is_admin: !isAdmin })
                                         .eq('id', user.id);
 
                                     if (error) throw error;
 
-                                    alert("권한이 변경되었습니다. 목록을 새로고침합니다.");
+                                    alert("권한이 변경되었습니다.");
                                     fetchUsers();
                                 } catch (e) {
                                     console.error(e);
@@ -108,20 +102,32 @@ const UserManagement = () => {
                                                 {avatar ? (
                                                     <img src={avatar} alt={name} />
                                                 ) : (
-                                                    <span className={styles.avatarPlaceholder}>{name[0]}</span>
+                                                    <span className={styles.avatarPlaceholder}>
+                                                        {name ? name[0] : '?'}
+                                                    </span>
                                                 )}
                                             </div>
                                             <div>
                                                 <div style={{ fontWeight: 500 }}>{name}</div>
-                                                <div className={styles.email}>{user.email}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className={styles.time}>
                                         {formatDate(user.created_at)}
                                     </td>
-                                    <td className={styles.time}>
-                                        {user.last_sign_in_at ? formatDate(user.last_sign_in_at) : '기록 없음'}
+                                    <td className={styles.badge}>
+                                        <span style={{
+                                            padding: '0.2rem 0.5rem',
+                                            borderRadius: '4px',
+                                            fontSize: '0.8rem',
+                                            backgroundColor: provider === 'google' ? '#e0f2fe' : '#f3f4f6',
+                                            color: provider === 'google' ? '#0284c7' : '#4b5563'
+                                        }}>
+                                            {provider}
+                                        </span>
+                                    </td>
+                                    <td className={styles.email}>
+                                        {email}
                                     </td>
                                     <td>
                                         {isAdmin ? (

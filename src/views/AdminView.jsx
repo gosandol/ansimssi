@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { ShieldAlert, LayoutDashboard, Users, MessageSquare, Settings, LogOut } from 'lucide-react';
+import { ShieldAlert, LayoutDashboard, Users, MessageSquare, Settings, LogOut, Activity } from 'lucide-react';
 import PromptEditor from '../components/admin/PromptEditor';
 import UserManagement from '../components/admin/UserManagement';
+import IoTManager from '../components/admin/IoTManager';
 
 const AdminView = ({ onBack }) => {
     const [loading, setLoading] = useState(true);
@@ -14,20 +15,26 @@ const AdminView = ({ onBack }) => {
     }, []);
 
     const checkAdmin = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            window.location.href = '/'; // Redirect if not logged in
+        // Safe destructuring
+        const { data, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !data?.user) {
+            window.location.href = '/';
             return;
         }
 
+        const user = data.user;
+
+        console.log("User ID:", user.id);
+
         // Check is_admin column in profiles
-        const { data, error } = await supabase
+        const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('is_admin')
             .eq('id', user.id)
             .single();
 
-        if (error || !data || !data.is_admin) {
+        if (profileError || !profileData || !profileData.is_admin) {
             alert("관리자 권한이 없습니다.");
             window.location.href = '/';
             return;
@@ -75,6 +82,12 @@ const AdminView = ({ onBack }) => {
                         onClick={() => setActiveTab('users')}
                     />
                     <NavItem
+                        icon={<Activity size={20} />}
+                        label="IoT 연결"
+                        active={activeTab === 'connectivity'}
+                        onClick={() => setActiveTab('connectivity')}
+                    />
+                    <NavItem
                         icon={<Settings size={20} />}
                         label="시스템 설정"
                         active={activeTab === 'settings'}
@@ -100,6 +113,7 @@ const AdminView = ({ onBack }) => {
                         {activeTab === 'dashboard' && '운영 현황 (Dashboard)'}
                         {activeTab === 'ai_ops' && 'AI 작전 사령부 (LLMOps)'}
                         {activeTab === 'users' && '회원 관리 (CRM)'}
+                        {activeTab === 'connectivity' && 'IoT 연결 (Device Registry)'}
                         {activeTab === 'settings' && '시스템 설정'}
                     </h2>
                     <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>
@@ -111,6 +125,7 @@ const AdminView = ({ onBack }) => {
                     {activeTab === 'dashboard' && <DashboardPlaceholder />}
                     {activeTab === 'ai_ops' && <div style={{ padding: '0rem' }}><PromptEditor /></div>}
                     {activeTab === 'users' && <div style={{ padding: '0rem' }}><UserManagement /></div>}
+                    {activeTab === 'connectivity' && <div style={{ padding: '0rem' }}><IoTManager /></div>}
                     {activeTab === 'settings' && <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>준비 중입니다...</div>}
                 </main>
             </div>

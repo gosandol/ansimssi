@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse
 import json
 import asyncio
 from tavily import TavilyClient
-from google import genai
+import google.generativeai as genai
 # from kdca_service import KdcaService 
 
 # Load environment variables
@@ -52,9 +52,10 @@ if supabase_url and supabase_key:
 search_manager = SearchManager()
 
 if gemini_api_key:
-    client = genai.Client(api_key=gemini_api_key)
+    genai.configure(api_key=gemini_api_key)
+    model = genai.GenerativeModel('gemini-2.0-flash')
 else:
-    client = None
+    model = None
 
 # --- Helper: Fetch System Prompt Dynamic ---
 def fetch_system_prompt():
@@ -251,10 +252,7 @@ async def search_endpoint(request: SearchRequest):
             prompt = f"{prompt}\n\n[SYSTEM NOTE: Today is {today_date}.]\n\nContext:\n{full_context}\n\nQuery: {request.query}"
 
             # Stream Content
-            response_stream = client.models.generate_content_stream(
-                model='gemini-2.0-flash',
-                contents=prompt
-            )
+            response_stream = model.generate_content(prompt, stream=True)
             
             full_answer_text = ""
             for chunk in response_stream:

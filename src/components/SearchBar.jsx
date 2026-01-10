@@ -1,17 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowRight, Paperclip, Globe, Focus, Mic, Search, ChevronDown, Check, Sparkles } from 'lucide-react';
+import { ArrowRight, Paperclip, Globe, Focus, Mic, Search, ChevronDown, Check, Sparkles, X, Loader2, Image as ImageIcon, FileText, Plus, HardDrive, Code, FileCode } from 'lucide-react';
 import ListeningWaveIcon from './icons/ListeningWaveIcon';
 import styles from './SearchBar.module.css';
 import VoiceChatView from '../views/VoiceChatView';
 import { isKoreanMatch } from '../lib/hangul';
 import { SMART_SUGGESTIONS } from '../lib/searchKeywords';
 import { API_BASE_URL } from '../lib/api_config';
+import { supabase } from '../lib/supabaseClient';
 
 const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) => {
     const [query, setQuery] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const [isFocusOpen, setIsFocusOpen] = useState(false);
     const [activeSearchMode, setActiveSearchMode] = useState('web'); // web, hospital, pharmacy, encyclopedia
+
+    // File Attachment State
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [showAttachMenu, setShowAttachMenu] = useState(false); // New: Attach Menu Toggle
+    const fileInputRef = useRef(null);
 
     // Data & Suggestions
     const [suggestions, setSuggestions] = useState([]);
@@ -93,101 +100,10 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
     const textareaRef = useRef(null);
     const recognitionRef = useRef(null);
 
-    // Initialize Speech Recognition
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (SpeechRecognition) {
-                const recognition = new SpeechRecognition();
-                recognition.continuous = true; // Use continuous to not stop too early, manually stop on submit
-                recognition.interimResults = true; // Real-time feedback
-                recognition.lang = 'ko-KR';
-
-                recognition.onresult = (event) => {
-                    let finalTranscript = '';
-                    let interimTranscript = '';
-
-                    // Iterate results
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            finalTranscript += event.results[i][0].transcript;
-                        } else {
-                            interimTranscript += event.results[i][0].transcript;
-                        }
-                    }
-
-                    const currentFullText = query + (query && !query.endsWith(' ') ? ' ' : '') + finalTranscript + interimTranscript;
-
-                    // Update UI with previews
-                    // Ideally we separate query (committed) from interim, but simplifying to setting query for now
-                    // Note: 'query' state dependency in useEffect might be stale. 
-                    // Better approach: Functional update or ref for current query.
-                    // However, standard SearchBar usually replaces content or appends.
-                    // Let's rely on transcript alone for the active session or handle appending carefully.
-                    // Simplified: Just setQuery to the latest transcript if we treat voice as "input mode".
-                    // But to support "type then speak", we need to append.
-                    // Given complexity, let's just use the transcript from THIS session.
-
-                    // Actually, simplest 'Gemini' feel: Voice replaces or appends.
-                    // Let's use functional update to be safe, but cleaner to just show what's being spoken.
-
-                    // AUTO-SUBMIT CHECK (on Final only)
-                    if (finalTranscript) {
-                        setQuery(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
-
-                        // Check for Question Endings
-                        const cleaned = finalTranscript.trim();
-                        // Common Korean Question/Request Endings
-                        const QUESTION_REGEX = /(?:알려줘|뭐야|무엇일까|어때|해줘|인가요|가요|나요|까요|합니까|입니까|옵니까|주세요|어떻게|왜|언제|어디서|누구|\?)$/;
-
-                        if (QUESTION_REGEX.test(cleaned) || cleaned.endsWith('?')) {
-                            // Trigger Search
-                            onSearch(query + (query ? ' ' : '') + finalTranscript);
-                            setQuery(''); // Reset after submit
-                            recognition.stop();
-                            setIsListening(false);
-                            return;
-                        }
-                    } else if (interimTranscript) {
-                        // Visual feedback of what's being said (optional, might flicker with setQuery prev)
-                        // For now, let's strictly handle final results to avoid jitter, 
-                        // OR if user wants "Gemini level", seeing text appear is key.
-                        // We can't easily mix 'prev' query with 'interim' without complex state.
-                        // So let's skip interim update to state for stability unless we refactor significantly.
-                        // User request: "Auto submit on question". Priority 1.
-                    }
-
-                    if (textareaRef.current) {
-                        textareaRef.current.style.height = 'auto';
-                        textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-                    }
-                };
-
-                recognition.onerror = (event) => {
-                    console.error('Speech recognition error', event.error);
-                    if (event.error !== 'no-speech') {
-                        setIsListening(false);
-                    }
-                };
-
-                recognition.onend = () => {
-                    // Only stop listening state if we truly stopped (not just pause)
-                    // With continuous=true, it stays on.
-                    setIsListening(false);
-                };
-
-                recognitionRef.current = recognition;
-            }
-        }
-    }, [query]); // Add query to dependency to append correctly? No, that restarts recognition.
-    // Better: Ref for query or functional updates. 
-    // Let's use functional update inside onresult. But onSearch needs latest total.
-    // Refactoring to use `useRef` for current query value to access inside callback without restarting effect.
-
+    // Initialize Speech Recognition (Hooks Logic Preserved)
     const queryRef = useRef(query);
     useEffect(() => { queryRef.current = query; }, [query]);
 
-    // Re-implement useEffect with queryRef
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -230,21 +146,6 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                     // Auto-submit if we have text
                     if (queryRef.current && queryRef.current.trim().length > 0) {
                         const finalQuery = queryRef.current.trim();
-                        // Optional: Small delay or check? No, direct submit is what user wants.
-
-                        // Handle Search Mode Prefix if needed (though local state might not be accessible inside callback easily if not in ref)
-                        // Actually activeSearchMode is state. We need a ref for it too if we want to include it, 
-                        // but handleInput/onSearch doesn't use it inside the component usually? 
-                        // Wait, the submit button logic adds prefix:
-                        // if (activeSearchMode === 'hospital') finalQuery = `[병원검색] ${query}`;
-                        // We should replicate that logic or just pass raw query if onSearch handles it. 
-                        // Looking at submit button: Key logic is THERE.
-                        // Let's rely on onSearch.
-
-                        // We need access to activeSearchMode. Since useEffect has [] dependency, 
-                        // we need a ref for activeSearchMode to be safe.
-
-                        // However, simplest fix for now:
                         onSearch(finalQuery);
                         setQuery('');
                         queryRef.current = '';
@@ -295,18 +196,132 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
 
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            if (query.trim()) {
-                onSearch(query);
-                setQuery('');
-                if (textareaRef.current) textareaRef.current.style.height = 'auto';
+            if (query.trim() || selectedFile) {
+                handleSearchWithFile();
             }
         }
+    };
+
+    // --- File Attachment Logic ---
+
+    const checkBucketExists = async () => {
+        // Optimistic check: we assume 'chat-uploads' exists or we have public access.
+        // If upload fails, we'll know.
+        return true;
+    };
+
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Simple validation: limit size to 10MB typical
+            if (file.size > 10 * 1024 * 1024) {
+                alert("파일 크기는 10MB 이하여야 합니다.");
+                return;
+            }
+            setSelectedFile(file);
+            // Focus input after selection
+            textareaRef.current?.focus();
+            setShowAttachMenu(false); // Close menu on select
+        }
+    };
+
+    const handleRemoveFile = (e) => {
+        e.stopPropagation(); // Prevent click-through
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const uploadFileToSupabase = async (file) => {
+        try {
+            // Unique path: userId(anon)/timestamp_filename
+            // Since we might be anon, we just use random ID or 'anon'
+            const uniqueId = Math.random().toString(36).substring(2, 15);
+            const ext = file.name.split('.').pop();
+            const fileName = `${Date.now()}_${uniqueId}.${ext}`;
+            const filePath = `temp/${fileName}`;
+
+            const { data, error } = await supabase.storage
+                .from('chat-uploads')
+                .upload(filePath, file);
+
+            if (error) throw error;
+
+            // Get Public URL
+            const { data: publicUrlData } = supabase.storage
+                .from('chat-uploads')
+                .getPublicUrl(filePath);
+
+            return publicUrlData.publicUrl;
+
+        } catch (error) {
+            console.error("Upload failed:", error);
+            // Fallback: If bucket doesn't exist or permissions fail, 
+            // helpful alert for the developer/user context.
+            if (error.message?.includes('Bucket not found') || error.statusCode === '404') {
+                alert("서버에 'chat-uploads' 버킷이 설정되지 않았습니다. 관리자에게 문의하세요.");
+            } else {
+                alert("파일 업로드 중 오류가 발생했습니다.");
+            }
+            return null;
+        }
+    };
+
+    const handleSearchWithFile = async () => {
+        let finalQuery = query;
+
+        // Mode Prefixes
+        if (activeSearchMode === 'hospital') finalQuery = `[병원검색] ${query}`;
+        else if (activeSearchMode === 'pharmacy') finalQuery = `[약국검색] ${query}`;
+        else if (activeSearchMode === 'encyclopedia') finalQuery = `[건강백과] ${query}`;
+
+        // If file exists, Upload First
+        if (selectedFile) {
+            setIsUploading(true);
+            const uploadedUrl = await uploadFileToSupabase(selectedFile);
+            setIsUploading(false);
+
+            if (uploadedUrl) {
+                // Append File Context to query
+                // Using Markdown syntax for the image/file usually helps the LLM
+                const attachmentStr = `\n\n[첨부파일](${uploadedUrl})`;
+                finalQuery += attachmentStr;
+            } else {
+                // Upload failed, stop (alert already shown)
+                return;
+            }
+        }
+
+        if (!finalQuery.trim()) return;
+
+        onSearch(finalQuery);
+        setQuery('');
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        if (textareaRef.current) textareaRef.current.style.height = 'auto';
     };
 
     return (
         <>
             <div className={`${styles.searchContainer} ${isFocused ? styles.focused : ''}`}>
                 <div className={styles.inputWrapper}>
+                    {/* File Preview Area */}
+                    {selectedFile && (
+                        <div className={styles.filePreview}>
+                            <div className={styles.fileInfo}>
+                                {selectedFile.type.startsWith('image/') ? (
+                                    <ImageIcon size={16} className={styles.fileIcon} />
+                                ) : (
+                                    <FileText size={16} className={styles.fileIcon} />
+                                )}
+                                <span className={styles.fileName}>{selectedFile.name}</span>
+                                <span className={styles.fileSize}>({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+                            </div>
+                            <button className={styles.removeFileButton} onClick={handleRemoveFile}>
+                                <X size={16} />
+                            </button>
+                        </div>
+                    )}
+
                     <textarea
                         ref={textareaRef}
                         className={`${styles.textarea} notranslate`}
@@ -326,6 +341,15 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                         rows={1}
                     />
 
+                    {/* Hidden File Input */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        style={{ display: 'none' }}
+                        onChange={handleFileSelect}
+                        accept="image/*,.pdf,.doc,.docx,.txt" // Broad support for mobile
+                    />
+
                     {/* Suggestion Dropdown */}
                     {showSuggestions && (
                         <div className={`${styles.suggestionMenu} ${dropUpMode ? styles.dropUp : ''}`}>
@@ -334,6 +358,7 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                                     key={idx}
                                     className={styles.suggestionItem}
                                     onClick={() => {
+                                        // Handle basic suggestion without file logic complicate
                                         onSearch(item.query);
                                         setQuery('');
                                         setShowSuggestions(false);
@@ -350,10 +375,52 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
 
                 <div className={styles.actionBar}>
                     <div className={styles.leftActions}>
-                        <button className={`${styles.actionButton} ${styles.hasTooltip}`} data-tooltip="첨부">
-                            <Paperclip size={18} />
-                            <span className={styles.actionText}>첨부</span>
-                        </button>
+                        {/* 1. New Plus Button Trigger for Attach Menu */}
+                        <div className={styles.attachWrapper}>
+                            <button
+                                className={`${styles.plusButton} ${showAttachMenu ? styles.active : ''} ${styles.hasTooltip}`}
+                                data-tooltip="추가 기능"
+                                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                            >
+                                <Plus size={20} />
+                            </button>
+
+                            {/* Gemini-Style Attach Menu */}
+                            {showAttachMenu && (
+                                <>
+                                    <div className={styles.focusOverlay} onClick={() => setShowAttachMenu(false)} />
+                                    <div className={`${styles.attachMenu} ${dropUpMode ? styles.attachMenuDropUp : ''}`}>
+
+                                        <div className={styles.attachItem} onClick={() => fileInputRef.current?.click()}>
+                                            <Paperclip size={18} className={styles.attachIcon} />
+                                            <span>파일 업로드</span>
+                                        </div>
+
+                                        <div className={styles.attachItem} onClick={() => {
+                                            if (fileInputRef.current) {
+                                                fileInputRef.current.accept = "image/*";
+                                                fileInputRef.current.click();
+                                            }
+                                        }}>
+                                            <ImageIcon size={18} className={styles.attachIcon} />
+                                            <span>사진</span>
+                                        </div>
+
+                                        <div className={styles.attachItem} onClick={() => alert("Google Drive 연동 준비 중입니다.")}>
+                                            <HardDrive size={18} className={styles.attachIcon} />
+                                            <span>Drive에서 파일 추가</span>
+                                        </div>
+
+                                        <div className={styles.attachItem} onClick={() => alert("코드 가져오기 준비 중입니다.")}>
+                                            <FileCode size={18} className={styles.attachIcon} />
+                                            <span>코드 가져오기</span>
+                                        </div>
+
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
                         <div className={styles.focusWrapper}>
                             <button
                                 className={`${styles.actionButton} ${isFocusOpen ? styles.active : ''} ${styles.hasTooltip}`}
@@ -423,21 +490,13 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
 
                     <div className={styles.rightActions}>
                         {/* 1. Dynamic Mic/Send Button */}
-                        {query.trim() ? (
+                        {(query.trim() || selectedFile) ? (
                             <button
                                 className={`${styles.submitButton} ${styles.active}`}
-                                onClick={() => {
-                                    let finalQuery = query;
-                                    if (activeSearchMode === 'hospital') finalQuery = `[병원검색] ${query}`;
-                                    else if (activeSearchMode === 'pharmacy') finalQuery = `[약국검색] ${query}`;
-                                    else if (activeSearchMode === 'encyclopedia') finalQuery = `[건강백과] ${query}`;
-
-                                    onSearch(finalQuery);
-                                    setQuery('');
-                                    if (textareaRef.current) textareaRef.current.style.height = 'auto';
-                                }}
+                                onClick={handleSearchWithFile}
+                                disabled={isUploading}
                             >
-                                <ArrowRight size={18} />
+                                {isUploading ? <Loader2 size={18} className={styles.spin} /> : <ArrowRight size={18} />}
                             </button>
                         ) : (
                             <button

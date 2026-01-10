@@ -448,3 +448,176 @@ input:checked+.slider:before {
     top: 120%;
     /* Slight slide down effect */
 }
+
+/* New Plus Button (Gemini Style) */
+.plusButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--bg-tertiary);
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.plusButton:hover,
+.plusButton.active {
+    background-color: var(--bg-tertiary-hover);
+    /* darken slightly */
+    transform: rotate(90deg);
+    /* Playful rotation on click */
+}
+
+/* Attach Menu Wrapper */
+.attachWrapper {
+    position: relative;
+    display: inline-block;
+}
+
+/* Attach Menu Dropdown */
+.attachMenu {
+    position: absolute;
+    top: 130%;
+    left: 0;
+    width: 220px;
+    background-color: #1e1f20;
+    /* Dark grey like Gemini */
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 0.5rem;
+    z-index: 105;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: slideDown 0.2s ease-out;
+}
+
+.attachMenuDropUp {
+    top: auto;
+    bottom: 130%;
+    animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.attachItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: #e3e3e3;
+    /* Light text */
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.attachItem:hover {
+    background-color: #2f3032;
+    /* Lighter grey on hover */
+}
+
+.attachIcon {
+    color: #e3e3e3;
+    opacity: 0.8;
+}
+
+/* File Preview */
+.filePreview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--bg-tertiary);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-subtle);
+}
+
+.fileInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    overflow: hidden;
+}
+
+.fileIcon {
+    color: var(--accent-primary);
+    flex-shrink: 0;
+}
+
+.fileName {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    font-weight: 500;
+}
+
+.fileSize {
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.removeFileButton {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.removeFileButton:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--text-error);
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

@@ -5,6 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
 from typing import List, Optional
+from fastapi.responses import StreamingResponse
+import json
+import asyncio
 from tavily import TavilyClient
 import google.generativeai as genai
 # from kdca_service import KdcaService 
@@ -88,7 +91,10 @@ class Source(BaseModel):
 
 # ...
 
-# Inside search function: 
+@app.post("/api/search")
+async def search_endpoint(request: SearchRequest):
+    async def event_generator():
+        try:
             # 1. 5-Tier Hybrid Search (Async)
             from datetime import datetime
             today_str = datetime.now().strftime("%Y-%m-%d")
@@ -98,14 +104,11 @@ class Source(BaseModel):
                 
             results, images, source_engine = await search_manager.search(search_query, contacts=request.contacts)
             academic_papers = search_manager.search_academic(search_query)
-            academic_papers = search_manager.search_academic(search_query)
 
             # [PERSONA LOGIC] Dynamic Disclaimer Detection
-            # Triggers if query contains medical keywords
             medical_keywords = ["약", "질병", "치료", "증상", "복용", "수술", "병원", "진료", "부작용", "효능", "통증", "혈압", "당뇨", "건강", "검진", "예방", "섭취", "영양제"]
             has_medical_intent = any(k in request.query for k in medical_keywords)
 
-            # Triggers if query contains legal keywords
             legal_keywords = ["층간소음", "분쟁", "규약", "법률", "법적", "책임", "손해배상", "고소", "판례", "변호사", "소송", "합의", "민사", "형사", "위자료"]
             has_legal_intent = any(k in request.query for k in legal_keywords)
             
@@ -123,7 +126,6 @@ class Source(BaseModel):
             ]
 
             # [STREAM START] Yield Metadata Event
-            # Disclaimer logic is now handled implicitly or via explicit key if needed (we removed forced disclaimer)
             yield json.dumps({
                 "type": "meta",
                 "sources": frontend_sources,
@@ -134,7 +136,7 @@ class Source(BaseModel):
 
             # Format context
             search_context = "\n\n".join([f"Source '{r['title']}': {r['content']}" for r in results[:12]])
-            full_context = f"{rag_context}\n\n=== WEB SEARCH RESULTS (Source: {source_engine}) ===\n{search_context}"
+            full_context = f"{rag_context}\n\n=== WEB SEARCH RESULTS (Source: {source_engine}) ===\n{search_context}" if 'rag_context' in locals() else f"=== WEB SEARCH RESULTS (Source: {source_engine}) ===\n{search_context}"
 
             # 1.5 Fetch Thread History (Context Injection)
             chat_history_text = ""
@@ -161,7 +163,7 @@ class Source(BaseModel):
             system_prompt_content = fetch_system_prompt()
             # Fallback logic handled in fetch_system_prompt or if empty string
             if "System Prompt" in system_prompt_content and len(system_prompt_content) < 100:
-                 system_prompt = """You are Ansimssi (안심씨)... (Fallback shortened)""" 
+                 system_prompt = """You are Ansimssi (안심씨), a highly capable AI Assistant specializing in Health, Safety, and Daily Life.""" 
             else:
                  system_prompt = system_prompt_content
 
@@ -240,9 +242,6 @@ class Source(BaseModel):
                     yield json.dumps({"type": "content", "delta": chunk.text}) + "\n"
 
             # 3. Related Questions (Optional: Separate call or heuristic)
-            # For speed, we can assume them or do a quick separate call.
-            # Or parse them if we forced JSON. But Streaming is better with raw text.
-            # Let's use a heuristic or a quick default for now to save latency.
             related_questions = [
                 f"{request.query}에 대해 더 자세히 알려줘",
                 f"{request.query} 관련 최신 정보는?",

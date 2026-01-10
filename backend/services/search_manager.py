@@ -156,7 +156,7 @@ class SearchManager:
             
         return papers
 
-    async def search(self, query):
+    async def search(self, query, contacts=[]):
         """
         Execute Parallel Race Strategy (The "Gemini" Speed)
         """
@@ -165,12 +165,15 @@ class SearchManager:
         results = []
         images = []
         source_engine = "none"
-
-        # Define async wrappers for each provider
+        
+        # ... (rest of async wrappers logic, keeping them unchanged implicitly or re-declaring them if needed. 
+        # Actually I need to be careful not to delete the entire function body. 
+        # I will just replace the top part and the app injection part)
+        
+        # Define async wrappers for each provider (Redefining for context)
         async def run_google():
             if not self.serpapi_key: return None
             try:
-                # SerpApi is blocking, so run in executor
                 loop = asyncio.get_event_loop()
                 return await loop.run_in_executor(None, self._search_google_sync, query)
             except Exception as e:
@@ -180,7 +183,6 @@ class SearchManager:
         async def run_tavily():
             if not self.tavily_client: return None
             try:
-                # Tavily client is blocking
                 loop = asyncio.get_event_loop()
                 return await loop.run_in_executor(None, self._search_tavily_sync, query)
             except Exception as e:
@@ -288,15 +290,182 @@ class SearchManager:
         else:
             source_engine = "hybrid_aggregation"
             
-        # Limit total context to avoid token overflow? 
-        # For now, let's keep top 8-10 high quality ones.
-        # Simple heuristic: Interleave results? 
-        # Or just take top 10 from the mixed bag.
-        final_results = aggregated_results[:12]
+        # --- KOREAN LIFE SERVICE INTEGRATION (New Phase) ---
+        # Detect intents and inject reliable service deep links
+        service_results = self._inject_korean_services(query)
+        
+        # --- APP LAUNCH INTEGRATION (Deep Links) ---
+        app_results = self._inject_app_actions(query, contacts)
+        
+        # Merge Priorities: App > Service > Web
+        final_results = []
+        if app_results:
+             print(f"📱 Injected {len(app_results)} App Launch cards.")
+             final_results.extend(app_results)
+             
+        if service_results:
+             print(f"🇰🇷 Injected {len(service_results)} Korean Service cards.")
+             final_results.extend(service_results)
+             
+        final_results.extend(aggregated_results[:10])
         
         print(f"🏆 Final Aggregated Context: {len(final_results)} items.")
 
         return final_results, images, source_engine
+
+    def _inject_app_actions(self, query, contacts=[]):
+        """
+        Detects intents to open specific apps and returns Deep Link cards.
+        Resolves contacts for SMS/Call.
+        """
+        results = []
+        q_lower = query.lower()
+        
+        # 1. Contact Resolution logic
+        target_number = ""
+        target_name = ""
+        
+        if contacts:
+            for c in contacts:
+                # Basic matching: if Name is in query
+                if c.name in query:
+                    target_name = c.name
+                    target_number = c.number.replace("-", "").strip()
+                    print(f"🎯 Contact Match: {target_name} -> {target_number}")
+                    break
+        
+        # 2. YouTube
+        if "유튜브" in query or "youtube" in q_lower:
+            results.append({
+                "title": "YouTube 실행",
+                "url": "https://www.youtube.com", 
+                "content": "유튜브 앱을 실행하여 동영상을 시청합니다."
+            })
+
+        # 3. KakaoTalk
+        if "카카오톡" in query or "카톡" in query or "kakaotalk" in q_lower:
+             results.append({
+                "title": "카카오톡 실행",
+                "url": "kakaotalk://", 
+                "content": "카카오톡 앱을 실행하여 대화를 시작합니다."
+            })
+
+        # 4. Phone (Dialer)
+        if "전화" in query or "call" in q_lower:
+             url = f"tel:{target_number}" if target_number else "tel:"
+             title = f"{target_name}에게 전화 걸기" if target_name else "전화 걸기 (키패드)"
+             results.append({
+                "title": title,
+                "url": url,
+                "content": f"{target_name or '전화'} 앱을 실행합니다."
+            })
+
+        # 5. Message (SMS)
+        # Parsing body: "Send text to [Name] saying [Body]"
+        # Korean: "[Name]에게 [Body]라고 문자 보내줘"
+        if "문자" in query or "메시지" in query or "sms" in q_lower:
+             body = ""
+             # Simple body extraction logic
+             if "라고" in query:
+                 parts = query.split("라고")
+                 if len(parts) > 0:
+                     # Attempt to find the content part. e.g. "테스트라고" -> "테스트"
+                     potential_body = parts[0].split()[-1] 
+                     # This is too simple. Let's try to grab everything between Name and '라고'
+                     # Or just the word before '라고'
+                     # Better: extract quoted text? Or just everything before '라고' excluding Name.
+                     body = parts[0].replace(target_name, "").replace("에게", "").replace("한테", "").strip()
+             
+             # Fallback simple extraction if '라고' missing but intent exists
+             elif "메시지" in query:
+                 # "테스트 메시지 보내줘"
+                 pass
+
+             # SMS URI scheme: sms:number?body=text
+             # iOS: sms:number&body=text (handling this cross-platform is tricky, usually ; or ? works)
+             # Let's use ?body= which works on most Android/iOS modern versions (or & on iOS)
+             # Actually, simpler is just `sms:number`. Browser handles the rest. 
+             # Adding body is nice to have.
+             
+             import urllib.parse
+             encoded_body = urllib.parse.quote(body)
+             url = f"sms:{target_number}"
+             if body:
+                 # Check OS agent? Assuming mobile standard.
+                 # '?' is standard for RFC 5724
+                 url += f"?body={encoded_body}"
+
+             title = f"{target_name}에게 문자 보내기" if target_name else "문자 메시지 보내기"
+             content = f"내용: '{body}'" if body else "메시지 앱을 실행합니다."
+             
+             results.append({
+                "title": title,
+                "url": url,
+                "content": content
+            })
+            
+        # 6. T-Map (Navigation)
+        if "티맵" in query or "tmap" in q_lower:
+             results.append({
+                "title": "티맵(T-Map) 실행",
+                "url": "tmap://", 
+                "content": "티맵 내비게이션 앱을 실행합니다."
+            })
+            
+        return results
+
+    def _inject_korean_services(self, query):
+        """
+        Detects intents for Shopping, Maps, Booking and generates deep links 
+        to major Korean platforms (Naver, Coupang, Kakao).
+        """
+        results = []
+        q_lower = query.lower()
+        q_encoded = urllib.parse.quote_plus(query)
+        
+        # 1. Shopping Intent (Coupang, Naver SmartStore)
+        shopping_keywords = ["살래", "사줘", "구매", "가격", "최저가", "쿠팡", "쇼핑", "얼마", "buy", "price", "cost"]
+        if any(k in q_lower for k in shopping_keywords):
+            # Clean query for shopping (remove intent words optionally, or keep for context)
+            clean_q = query.replace("최저가", "").replace("가격", "").replace("구매", "").strip()
+            clean_q_enc = urllib.parse.quote_plus(clean_q)
+            
+            results.append({
+                "title": f"쿠팡 최저가 검색: {clean_q}",
+                "url": f"https://www.coupang.com/np/search?q={clean_q_enc}",
+                "content": f"쿠팡에서 '{clean_q}'의 로켓배송 상품과 최저가 정보를 즉시 확인하세요."
+            })
+            results.append({
+                "title": f"네이버 쇼핑 가격비교: {clean_q}",
+                "url": f"https://search.shopping.naver.com/search/all?query={clean_q_enc}",
+                "content": f"네이버 쇼핑에서 '{clean_q}'의 가격 비교와 포인트 혜택을 확인해보세요."
+            })
+
+        # 2. Map/Place/Navigation Intent (Naver Map, Kakao Map)
+        map_keywords = ["어디", "위치", "가는길", "지도", "맛집", "근처", "주변", "병원", "약국", "map", "location", "nav"]
+        if any(k in q_lower for k in map_keywords):
+             results.append({
+                "title": f"네이버 지도: '{query}' 검색",
+                "url": f"https://map.naver.com/v5/search/{q_encoded}",
+                "content": f"네이버 지도에서 '{query}'의 위치, 리뷰, 영업시간을 확인하고 길찾기를 시작하세요."
+            })
+             # Kakao Map is also very popular
+             results.append({
+                "title": f"카카오맵: '{query}' 검색",
+                "url": f"https://map.kakao.com/?q={q_encoded}",
+                "content": f"카카오맵에서 '{query}' 위치 정보와 실시간 교통 정보를 확인하세요."
+            })
+
+        # 3. Booking/Reservation Intent (Naver Booking, CatchTable - simplified to Naver for now)
+        booking_keywords = ["예약", "숙소", "펜션", "호텔", "식당", "회식", "booking", "reserve"]
+        if any(k in q_lower for k in booking_keywords):
+             results.append({
+                "title": f"네이버 예약/플레이스: {query}",
+                "url": f"https://map.naver.com/v5/search/{q_encoded}", # Naver Map serves as the main portal for Place/Booking
+                "content": f"네이버 플레이스에서 '{query}' 정보를 확인하고 간편하게 예약하세요."
+            })
+             
+        return results
 
     # --- Sync Helper Implementations ---
     def _search_google_sync(self, query):
@@ -410,6 +579,26 @@ class SearchManager:
                 "https://img.freepik.com/free-photo/hot-tea-cup_23-2148111111.jpg"
             ]
             
+        elif any(k in q_lower for k in ["naver", "네이버"]):
+             print(f"Using Naver Fallback for: {query}")
+             query_encoded = urllib.parse.quote_plus(query.replace("네이버", "").replace("naver", "").strip())
+             results = [
+                 {
+                     "title": f"네이버 통합 검색: '{query}'",
+                     "url": f"https://search.naver.com/search.naver?query={query_encoded}",
+                     "content": f"네이버에서 '{query}'에 대한 통합 검색 결과를 확인하세요. 블로그, 카페, 지식iN 등 다양한 정보를 제공합니다."
+                 },
+                 {
+                     "title": f"네이버 지도: '{query}' 주변 검색",
+                     "url": f"https://map.naver.com/v5/search/{query_encoded}",
+                     "content": f"네이버 지도에서 '{query}' 위치, 리뷰, 영업시간 등을 확인해보세요."
+                 }
+             ]
+             images = [
+                 "https://www.naver.com/favicon.ico",
+                 "https://map.naver.com/favicon.ico"
+             ]
+
         else:
             # Dynamic Fallback: Generate valid search links for the specific query
             # This ensures 100% relevance even if we don't have a specific mock entry.
@@ -417,27 +606,27 @@ class SearchManager:
             query_encoded = urllib.parse.quote_plus(query)
             results = [
                 {
-                    "title": f"'{query}' 관련 최신 연구 및 임상 정보 (Google Scholar)",
+                    "title": f"'{query}' 구글 검색 결과 보기",
+                    "url": f"https://www.google.com/search?q={query_encoded}",
+                    "content": f"구글에서 '{query}'에 대한 웹 문서, 이미지, 뉴스를 검색합니다."
+                },
+                {
+                    "title": f"'{query}' 네이버 검색 결과 보기",
+                    "url": f"https://search.naver.com/search.naver?query={query_encoded}",
+                    "content": f"한국 최대 포털 네이버에서 '{query}' 관련 정보를 찾아보세요."
+                },
+                {
+                    "title": f"'{query}' 관련 학술 정보 (Google Scholar)",
                     "url": f"https://scholar.google.co.kr/scholar?q={query_encoded}",
-                    "content": f"구글 학술 검색에서 '{query}'에 대한 전문적인 논문과 연구 자료를 즉시 확인하세요."
-                },
-                {
-                    "title": f"'{query}' 건강 정보 더보기 (Naver 지식백과)",
-                    "url": f"https://terms.naver.com/search.naver?query={query_encoded}",
-                    "content": f"네이버 지식백과에서 검증된 '{query}' 관련 건강 정보를 찾아보세요."
-                },
-                {
-                    "title": f"질병관리청 국가건강정보포털 검색: '{query}'",
-                    "url": f"https://health.kdca.go.kr/healthinfo/biz/health/search/search.do?searchTxt={query_encoded}",
-                    "content": "국가 검증 의학 정보를 제공하는 질병관리청 포털에서 관련 정보를 검색합니다."
+                    "content": f"구글 학술 검색에서 '{query}'에 대한 전문적인 논문과 연구 자료를 확인하세요."
                 }
             ]
-            # Generic safe images if query specific ones aren't available
+            # Generic safe images
             images = [
-                 "https://health.kdca.go.kr/healthinfo/biz/health/file/fileDownload.do?atchFileId=FILE_000000000000100&fileSn=1",
-                 "https://ssl.pstatic.net/static/terms/terms_logo.png",
+                 "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png",
+                 "https://www.naver.com/favicon.ico",
                  "https://scholar.google.co.kr/intl/ko/scholar/images/1x/scholar_logo_64dp.png",
-                 "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"
+                 "https://health.kdca.go.kr/healthinfo/biz/health/file/fileDownload.do?atchFileId=FILE_000000000000100&fileSn=1"
             ]
 
         return results, images

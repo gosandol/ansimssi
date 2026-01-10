@@ -15,9 +15,19 @@ export const FamilyProvider = ({ children }) => {
         return saved ? JSON.parse(saved) : null;
     });
 
+    // Contacts (Ansim Speed Dial)
+    const [contacts, setContacts] = useState(() => {
+        const saved = localStorage.getItem('ansim-contacts');
+        return saved ? JSON.parse(saved) : [];
+    });
+
     useEffect(() => {
         localStorage.setItem('ansim-family-members', JSON.stringify(familyMembers));
     }, [familyMembers]);
+
+    useEffect(() => {
+        localStorage.setItem('ansim-contacts', JSON.stringify(contacts));
+    }, [contacts]);
 
     useEffect(() => {
         if (currentProfile) {
@@ -39,6 +49,15 @@ export const FamilyProvider = ({ children }) => {
         }
     };
 
+    const addContact = (name, number) => {
+        const newContact = { id: Date.now(), name, number };
+        setContacts([...contacts, newContact]);
+    };
+
+    const removeContact = (id) => {
+        setContacts(contacts.filter(c => c.id !== id));
+    };
+
     const loginAs = (name) => {
         const member = familyMembers.find(m => m.name === name);
         if (member) {
@@ -56,8 +75,11 @@ export const FamilyProvider = ({ children }) => {
         <FamilyContext.Provider value={{
             familyMembers,
             currentProfile,
+            contacts,
             addFamilyMember,
             removeFamilyMember,
+            addContact,
+            removeContact,
             loginAs,
             logout
         }}>

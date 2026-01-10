@@ -71,69 +71,24 @@ def fetch_system_prompt():
     
     return default_prompt # Fallback if DB update fails or empty
 
+class Contact(BaseModel):
+    name: str
+    number: str
+
 class SearchRequest(BaseModel):
     query: str
     thread_id: Optional[str] = None
+    contacts: Optional[List[Contact]] = []
 
 class Source(BaseModel):
     title: str
     url: str
     content: str
+# ... (existing Source model definition if duplicated, but I am replacing the block containing SearchRequest)
 
-class SearchResponse(BaseModel):
-    answer: str
-    disclaimer: str
-    sources: List[Source]
-    images: List[str]
-    academic: List[dict]
-    related_questions: List[str]
+# ...
 
-from fastapi.responses import StreamingResponse
-import json
-
-@app.post("/api/search")
-async def search(request: SearchRequest):
-    if not model:
-        print("Error: Gemini Model not initialized (Key missing?)")
-        raise HTTPException(status_code=500, detail="Gemini Key missing")
-
-    async def event_generator():
-        try:
-            # === 0. AFFIRMATIVE INTENT INTERCEPTOR (Sero Doctor) ===
-            affirmative_keywords = ["네", "응", "어", "연결해줘", "비대면진료", "새로닥터", "상담할래", "진료받을래"]
-            cleaned_query = request.query.strip().replace(" ", "")
-            is_affirmative = (
-                cleaned_query in ["네", "예", "응", "어", "네부탁해요", "네연결해줘", "연결해줘"] or 
-                any(k in cleaned_query for k in ["비대면진료연결", "새로닥터연결", "상담연결"])
-            )
-
-            if is_affirmative:
-                # Immediate Response for Doctor Connection (No LLM needed)
-                # Yield Meta
-                yield json.dumps({"type": "meta", "sources": [], "images": [], "disclaimer": ""}) + "\n"
-                # Yield Content
-                answer = """## 🏥 새로닥터 연결\n\n네, 알겠습니다. **안심씨의 AI 주치의 서비스**를 통해 전문의와 상담하실 수 있도록 **새로닥터 비대면 진료**를 연결하겠습니다.\n\n화면의 안내에 따라 증상을 선택하시면 곧바로 진료 접수가 진행됩니다. 잠시만 기다려주세요..."""
-                yield json.dumps({"type": "content", "delta": answer}) + "\n"
-                # Yield Done
-                yield json.dumps({"type": "done", "related_questions": ["비대면 진료는 어떻게 진행되나요?", "진료비는 얼마인가요?"]}) + "\n"
-                return
-
-            # 0. RAG: Check Medical Knowledge Base first
-            rag_context = ""
-            try:
-                json_path = os.path.join(os.path.dirname(__file__), 'data', 'medical_data.json')
-                if os.path.exists(json_path):
-                    with open(json_path, 'r', encoding='utf-8') as f:
-                        medical_knowledge = json.load(f)
-                    
-                    for item in medical_knowledge:
-                        for keyword in item.get('keywords', []):
-                            if keyword in request.query:
-                                rag_context += f"\n\n[OFFICIAL HEALTH GUIDELINE]\n{item['content']}"
-                                break
-            except Exception as e:
-                print(f"RAG Error: {e}")
-
+# Inside search function: 
             # 1. 5-Tier Hybrid Search (Async)
             from datetime import datetime
             today_str = datetime.now().strftime("%Y-%m-%d")
@@ -141,7 +96,8 @@ async def search(request: SearchRequest):
             if any(w in request.query for w in ["오늘", "날씨", "뉴스", "today", "weather", "news"]):
                 search_query = f"{search_query} {today_str}"
                 
-            results, images, source_engine = await search_manager.search(search_query)
+            results, images, source_engine = await search_manager.search(search_query, contacts=request.contacts)
+            academic_papers = search_manager.search_academic(search_query)
             academic_papers = search_manager.search_academic(search_query)
 
             # [PERSONA LOGIC] Dynamic Disclaimer Detection
@@ -180,6 +136,27 @@ async def search(request: SearchRequest):
             search_context = "\n\n".join([f"Source '{r['title']}': {r['content']}" for r in results[:12]])
             full_context = f"{rag_context}\n\n=== WEB SEARCH RESULTS (Source: {source_engine}) ===\n{search_context}"
 
+            # 1.5 Fetch Thread History (Context Injection)
+            chat_history_text = ""
+            if request.thread_id and supabase:
+                try:
+                    # Fetch last 6 messages for context (3 turns)
+                    history_response = supabase.table('messages')\
+                        .select('role, content')\
+                        .eq('thread_id', request.thread_id)\
+                        .order('created_at', desc=True)\
+                        .limit(6)\
+                        .execute()
+                    
+                    if history_response.data:
+                        # Re-order to chronological
+                        history_msgs = history_response.data[::-1]
+                        history_lines = [f"{m['role'].upper()}: {m['content']}" for m in history_msgs]
+                        chat_history_text = "\n".join(history_lines)
+                        print(f"📖 Loaded {len(history_msgs)} history messages for context.")
+                except Exception as e:
+                    print(f"History Fetch Error: {e}")
+
             # 2. Generate Answer with Gemini (Streaming)
             system_prompt_content = fetch_system_prompt()
             # Fallback logic handled in fetch_system_prompt or if empty string
@@ -196,6 +173,9 @@ async def search(request: SearchRequest):
             **Current Request**:
             Query: {request.query}
             Context: {full_context}
+            
+            **Conversation History (Previous Context)**:
+            {chat_history_text}
 
             **STRICT Format Instruction (Gemini Visual Blueprint)**:
             Use `---` separators between sections.
@@ -241,6 +221,9 @@ async def search(request: SearchRequest):
             **Safety & Medical**:
             - If medical/safety context, use the "3. The Caution" section strictly.
             - **Never** say "I am not a doctor" repetitively in the body. Use the disclaimer section.
+            
+            **Handling Follow-ups**:
+            - If the query is "buy link" or similar short follow-up, USE THE HISTORY to understand what product is being discussed.
 
             OUTPUT FORMAT: Raw Markdown text only.
             """

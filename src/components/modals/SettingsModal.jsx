@@ -1,325 +1,166 @@
 import React, { useState } from 'react';
-import { useTheme } from '../../context/ThemeContext';
+import { X, Mic, Phone, User, Info, Check, Trash2, Plus } from 'lucide-react';
 import { useFamily } from '../../context/FamilyContext';
-import { X, ChevronRight, ChevronDown, Globe, Moon, Map, User, Check, Smartphone, Sun, Plus, Trash2, LogOut, ShieldCheck, CreditCard } from 'lucide-react';
 import styles from './SettingsModal.module.css';
-import MedicalRegistrationModal from './MedicalRegistrationModal';
 
-const SettingsModal = ({ onClose }) => {
-    const { theme, setTheme } = useTheme();
-    const { familyMembers, currentProfile, addFamilyMember, removeFamilyMember, loginAs, logout } = useFamily();
+const SettingsModal = ({ onClose, initialTab }) => {
+    const [activeTab, setActiveTab] = useState(initialTab || 'contacts');
+    const { contacts, addContact, removeContact } = useFamily();
 
-    const [expandedSection, setExpandedSection] = useState(null);
-    const [isAddingMember, setIsAddingMember] = useState(false);
-    const [newMemberName, setNewMemberName] = useState('');
-    const [newMemberRole, setNewMemberRole] = useState('');
+    const [newName, setNewName] = useState('');
+    const [newNumber, setNewNumber] = useState('');
 
-    // Medical Modal State
-    const [editingMemberId, setEditingMemberId] = useState(null);
-
-    const toggleSection = (section) => {
-        setExpandedSection(expandedSection === section ? null : section);
-        setIsAddingMember(false); // Reset add state on toggle
-    };
-
-    const handleAddMember = (e) => {
-        e.preventDefault();
-        if (newMemberName.trim()) {
-            addFamilyMember(newMemberName, newMemberRole || '가족');
-            setNewMemberName('');
-            setNewMemberRole('');
-            setIsAddingMember(false);
-        }
-    };
-
-    const handleOpenMedicalModal = (memberId) => {
-        setEditingMemberId(memberId);
-    };
-
-    const handleSaveMedicalInfo = (memberId, data) => {
-        updateMedicalInfo(memberId, data);
-        alert('진료 정보가 안전하게 등록되었습니다.');
-        setEditingMemberId(null);
-    };
-
-    const getThemeLabel = (t) => {
-        if (t === 'system') return '자동';
-        if (t === 'light') return '화이트 모드';
-        if (t === 'dark') return '다크 모드';
-        return '';
-    };
-
-    const getRoleLabel = (role) => {
-        switch (role) {
-            case 'father': return '👨 아빠';
-            case 'mother': return '👩 엄마';
-            case 'child': return '🧒 자녀';
-            case 'senior': return '👵 어르신';
-            case 'other': return '👤 기타';
-            default: return role || '가족';
+    const handleAddContact = () => {
+        if (newName && newNumber) {
+            addContact(newName, newNumber);
+            setNewName('');
+            setNewNumber('');
         }
     };
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <button className={styles.closeButton} onClick={onClose}>
-                    <X size={24} />
-                </button>
-                <h2 className={styles.title}>설정</h2>
-                <div style={{ width: 40 }} />
-            </div>
+        <div className={styles.overlay} onClick={onClose}>
+            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                <div className={styles.header}>
+                    <h2>설정 및 도움말</h2>
+                    <button className={styles.closeButton} onClick={onClose}>
+                        <X size={24} />
+                    </button>
+                </div>
 
-            <div className={styles.scrollContent}>
+                <div className={styles.container}>
+                    {/* Sidebar Tabs */}
+                    <div className={styles.sidebar}>
+                        <button
+                            className={`${styles.tab} ${activeTab === 'contacts' ? styles.active : ''}`}
+                            onClick={() => setActiveTab('contacts')}
+                        >
+                            <Phone size={18} />
+                            <span>안심 연락처</span>
+                        </button>
+                        <button
+                            className={`${styles.tab} ${activeTab === 'voice' ? styles.active : ''}`}
+                            onClick={() => setActiveTab('voice')}
+                        >
+                            <Mic size={18} />
+                            <span>음성 설정</span>
+                        </button>
+                        <button
+                            className={`${styles.tab} ${activeTab === 'account' ? styles.active : ''}`}
+                            onClick={() => setActiveTab('account')}
+                        >
+                            <User size={18} />
+                            <span>계정 관리</span>
+                        </button>
+                        <button
+                            className={`${styles.tab} ${activeTab === 'info' ? styles.active : ''}`}
+                            onClick={() => setActiveTab('info')}
+                        >
+                            <Info size={18} />
+                            <span>정보</span>
+                        </button>
+                    </div>
 
-                {/* Section: Account & Family */}
-                <div className={styles.sectionHeader}>계정 및 가족</div>
-                <div className={styles.section}>
-                    {/* Current Profile Info */}
-                    <div className={styles.profileCard}>
-                        {currentProfile ? (
-                            <>
-                                <div className={styles.profileAvatar}>
-                                    {currentProfile.name[0]}
-                                </div>
-                                <div className={styles.profileInfo}>
-                                    <div className={styles.profileName}>{currentProfile.name}</div>
-                                    <div className={styles.profileRole}>{getRoleLabel(currentProfile.role)}</div>
-                                    {/* Medical Status Tag */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
-                                        {currentProfile.medicalInfo?.isVerified ? (
-                                            <span style={{ fontSize: '0.75rem', color: '#22d3ee', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                                                <ShieldCheck size={12} /> 진료 정보 등록됨
-                                            </span>
-                                        ) : (
-                                            <button
-                                                onClick={() => handleOpenMedicalModal(currentProfile.id)}
-                                                style={{ background: '#333', border: 'none', color: '#fbbf24', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                                            >
-                                                <CreditCard size={12} /> 진료/카드 정보 등록 필요
-                                            </button>
-                                        )}
+                    {/* Content Area */}
+                    <div className={styles.content}>
+                        {activeTab === 'contacts' && (
+                            <div className={styles.section}>
+                                <h3>안심 스피드 다이얼</h3>
+                                <p className={styles.description}>
+                                    "딸에게 전화해줘", "예원이에게 문자해줘"와 같이<br />
+                                    이름만 불러서 연락할 수 있도록 번호를 등록하세요.
+                                </p>
+
+                                <div className={styles.addContactForm}>
+                                    <div className={styles.inputGroup}>
+                                        <input
+                                            placeholder="이름 (예: 딸, 최예원)"
+                                            value={newName}
+                                            onChange={e => setNewName(e.target.value)}
+                                        />
+                                        <input
+                                            placeholder="전화번호 (010...)"
+                                            value={newNumber}
+                                            onChange={e => setNewNumber(e.target.value)}
+                                        />
                                     </div>
+                                    <button onClick={handleAddContact} disabled={!newName || !newNumber}>
+                                        <Plus size={16} /> 추가
+                                    </button>
                                 </div>
-                                <button className={styles.logoutButton} onClick={logout} title="로그아웃">
-                                    <LogOut size={16} />
-                                </button>
-                            </>
-                        ) : (
-                            <div className={styles.loginCard} onClick={() => { /* Trigger generic login if needed, or just emphasize family login */ }}>
-                                <div className={styles.profileInfo}>
-                                    <div className={styles.profileName}>방문자 (게스트)</div>
-                                    <div className={styles.profileRole}>로그인하여 맞춤 서비스를 이용하세요</div>
+
+                                <div className={styles.contactList}>
+                                    {contacts.length === 0 ? (
+                                        <div className={styles.emptyState}>등록된 연락처가 없습니다.</div>
+                                    ) : (
+                                        contacts.map(contact => (
+                                            <div key={contact.id} className={styles.contactItem}>
+                                                <div className={styles.contactInfo}>
+                                                    <span className={styles.contactName}>{contact.name}</span>
+                                                    <span className={styles.contactNumber}>{contact.number}</span>
+                                                </div>
+                                                <button
+                                                    className={styles.deleteButton}
+                                                    onClick={() => removeContact(contact.id)}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}
-                    </div>
 
-                    {/* Family Management Toggle */}
-                    <button
-                        className={styles.menuItem}
-                        onClick={() => toggleSection('family')}
-                        style={expandedSection === 'family' ? { borderBottom: 'none' } : {}}
-                    >
-                        <div className={styles.labelGroup}>
-                            <User size={20} className={styles.icon} />
-                            <span>가족 구성원 관리</span>
-                        </div>
-                        {expandedSection === 'family' ? <ChevronDown size={20} className={styles.chevron} /> : <ChevronRight size={20} className={styles.chevron} />}
-                    </button>
-
-                    {/* Expanded Family List */}
-                    {expandedSection === 'family' && (
-                        <div className={styles.expandedContent}>
-                            {familyMembers.length > 0 ? (
-                                familyMembers.map(member => (
-                                    <div key={member.id} className={styles.familyItemRow}>
-                                        <div className={styles.familyItemInfo} onClick={() => loginAs(member.name)}>
-                                            <span className={styles.familyName}>
-                                                {member.name}
-                                                {member.medicalInfo?.isVerified && <ShieldCheck size={14} color="#22d3ee" style={{ marginLeft: 4 }} />}
-                                            </span>
-                                            <span className={styles.familyRole}>{getRoleLabel(member.role)}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            {!member.medicalInfo?.isVerified && (
-                                                <button onClick={() => handleOpenMedicalModal(member.id)} style={{ background: 'none', border: 'none', color: '#fbbf24', cursor: 'pointer' }} title="진료 정보 등록">
-                                                    <CreditCard size={16} />
-                                                </button>
-                                            )}
-                                            <button className={styles.deleteButton} onClick={() => removeFamilyMember(member.id)}>
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
+                        {activeTab === 'voice' && (
+                            <div className={styles.section}>
+                                <h3>음성 인식 설정</h3>
+                                <div className={styles.settingItem}>
+                                    <div className={styles.settingInfo}>
+                                        <span className={styles.settingTitle}>핸즈프리 모드</span>
+                                        <span className={styles.settingDesc}>대화가 끝나도 마이크를 끄지 않고 계속 대화합니다.</span>
                                     </div>
-                                ))
-                            ) : (
-                                <div style={{ padding: '0.8rem', color: '#888', fontSize: '0.9rem' }}>
-                                    등록된 가족이 없습니다.
+                                    <div className={styles.toggle}>
+                                        {/* Placeholder Toggle */}
+                                        <div className={styles.toggleThumb} style={{ marginLeft: '20px', background: '#4ade80' }}></div>
+                                    </div>
                                 </div>
-                            )}
-
-                            {/* Add Member Form */}
-                            {isAddingMember ? (
-                                <form onSubmit={handleAddMember} className={styles.addMemberForm}>
-                                    <input
-                                        type="text"
-                                        placeholder="이름 (예: 이숙희)"
-                                        value={newMemberName}
-                                        onChange={(e) => setNewMemberName(e.target.value)}
-                                        className={styles.inputField}
-                                        autoFocus
-                                    />
-                                    <select
-                                        value={newMemberRole}
-                                        onChange={(e) => setNewMemberRole(e.target.value)}
-                                        className={styles.inputField}
-                                        style={{ appearance: 'auto', paddingRight: '1rem', cursor: 'pointer' }}
-                                    >
-                                        <option value="" disabled>역할 선택 (맞춤 추천 제공)</option>
-                                        <option value="father">👨 아빠 (가장)</option>
-                                        <option value="mother">👩 엄마 (주부)</option>
-                                        <option value="child">🧒 자녀 (학생)</option>
-                                        <option value="senior">👵 어르신 (부모님)</option>
-                                        <option value="other">👤 기타</option>
-                                    </select>
-                                    <div className={styles.formActions}>
-                                        <button type="button" onClick={() => setIsAddingMember(false)} className={styles.cancelBtn}>취소</button>
-                                        <button type="submit" className={styles.confirmBtn}>등록</button>
+                                <div className={styles.settingItem}>
+                                    <div className={styles.settingInfo}>
+                                        <span className={styles.settingTitle}>음성 답변 듣기</span>
+                                        <span className={styles.settingDesc}>안심씨의 답변을 음성으로 읽어줍니다 (TTS).</span>
                                     </div>
-                                </form>
-                            ) : (
-                                <button className={styles.addItemBtn} onClick={() => setIsAddingMember(true)}>
-                                    <Plus size={16} />
-                                    <span>가족 구성원 추가하기</span>
+                                    <div className={styles.toggle}>
+                                        <div className={styles.toggleThumb} style={{ marginLeft: '20px', background: '#4ade80' }}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'info' && (
+                            <div className={styles.section}>
+                                <h3>앱 정보</h3>
+                                <p><strong>안심씨 (Ansimssi)</strong> v2.1.0</p>
+                                <p>© 2026 Ansim Insurance Co. All rights reserved.</p>
+                                <div className={styles.links}>
+                                    <a href="/terms">서비스 이용약관</a>
+                                    <a href="/privacy">개인정보 처리방침</a>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'account' && (
+                            <div className={styles.section}>
+                                <h3>계정 관리</h3>
+                                <p>현재 로그인된 계정 정보를 관리합니다.</p>
+                                <button className={styles.dangerButton} onClick={() => alert("준비 중입니다.")}>
+                                    회원 탈퇴
                                 </button>
-                            )}
-                        </div>
-                    )}
+                            </div>
+                        )}
+                    </div>
                 </div>
-
-                {/* Section: Personalization */}
-                <div className={styles.sectionHeader}>개인화</div>
-                <div className={styles.section}>
-                    <button className={styles.menuItem}>
-                        <div className={styles.labelGroup}>
-                            <span>AI 응답 톤</span>
-                        </div>
-                        <span className={styles.valueText}>기본 (친절함)</span>
-                    </button>
-                    <button className={styles.menuItem}>
-                        <div className={styles.labelGroup}>
-                            <span>관심 건강 분야</span>
-                        </div>
-                        <ChevronRight size={20} className={styles.chevron} />
-                    </button>
-                </div>
-
-                {/* Section: Appearance */}
-                <div className={styles.sectionHeader}>화면 및 테마</div>
-                <div className={styles.section}>
-                    {/* Theme Toggle Button */}
-                    <button
-                        className={styles.menuItem}
-                        onClick={() => toggleSection('theme')}
-                        style={expandedSection === 'theme' ? { borderBottom: 'none' } : {}}
-                    >
-                        <div className={styles.labelGroup}>
-                            <Moon size={20} className={styles.icon} />
-                            <span>테마</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span className={styles.valueText}>{getThemeLabel(theme)}</span>
-                            {expandedSection === 'theme' ? <ChevronDown size={20} className={styles.chevron} /> : <ChevronRight size={20} className={styles.chevron} />}
-                        </div>
-                    </button>
-
-                    {/* Expanded Theme Options */}
-                    {expandedSection === 'theme' && (
-                        <div className={styles.expandedContent}>
-                            <button
-                                className={`${styles.subMenuItem} ${theme === 'system' ? styles.activeSubItem : ''}`}
-                                onClick={() => setTheme('system')}
-                            >
-                                <div className={styles.labelGroup}>
-                                    <Smartphone size={18} />
-                                    <span>자동</span>
-                                </div>
-                                {theme === 'system' && <Check size={18} color="#3b82f6" />}
-                            </button>
-                            <button
-                                className={`${styles.subMenuItem} ${theme === 'dark' ? styles.activeSubItem : ''}`}
-                                onClick={() => setTheme('dark')}
-                            >
-                                <div className={styles.labelGroup}>
-                                    <Moon size={18} />
-                                    <span>다크 모드</span>
-                                </div>
-                                {theme === 'dark' && <Check size={18} color="#3b82f6" />}
-                            </button>
-                            <button
-                                className={`${styles.subMenuItem} ${theme === 'light' ? styles.activeSubItem : ''}`}
-                                onClick={() => setTheme('light')}
-                            >
-                                <div className={styles.labelGroup}>
-                                    <Sun size={18} />
-                                    <span>화이트 모드</span>
-                                </div>
-                                {theme === 'light' && <Check size={18} color="#3b82f6" />}
-                            </button>
-                        </div>
-                    )}
-
-                    <button className={styles.menuItem}>
-                        <div className={styles.labelGroup}>
-                            <Globe size={20} className={styles.icon} />
-                            <span>언어 (Language)</span>
-                        </div>
-                        <span className={styles.valueText}>한국어</span>
-                    </button>
-                </div>
-
-                {/* Section: Support */}
-                <div className={styles.sectionHeader}>도움말 및 지원</div>
-                <div className={styles.section}>
-                    <button className={styles.menuItem}>
-                        <span>안심씨 사용법 (튜토리얼)</span>
-                    </button>
-                    <button className={styles.menuItem}>
-                        <span>자주 묻는 질문 (FAQ)</span>
-                    </button>
-                    <button className={styles.menuItem}>
-                        <span>의견 보내기</span>
-                    </button>
-                </div>
-
-                {/* Section: About */}
-                <div className={styles.sectionHeader}>정보</div>
-                <div className={styles.section}>
-                    <button className={styles.menuItem}>
-                        <span>서비스 이용 약관</span>
-                        <ChevronRight size={20} className={styles.chevron} />
-                    </button>
-                    <button className={styles.menuItem}>
-                        <span>개인정보 처리방침</span>
-                        <ChevronRight size={20} className={styles.chevron} />
-                    </button>
-                </div>
-
-                <div className={styles.versionInfo}>
-                    Ansimssi v1.1.0 · Build 20260104
-                </div>
-
-                <div style={{ height: '40px' }} />
             </div>
-            {/* Render Medical Modal if active */}
-            {editingMemberId && (
-                <MedicalRegistrationModal
-                    member={familyMembers.find(m => m.id === editingMemberId)}
-                    onSave={handleSaveMedicalInfo}
-                    onClose={() => setEditingMemberId(null)}
-                />
-            )}
         </div>
     );
 };

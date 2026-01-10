@@ -23,7 +23,7 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
     const [threadId, setThreadId] = useState(null);
 
     // Context for Personalization
-    const { currentProfile } = useFamily();
+    const { currentProfile, contacts } = useFamily();
     const [loadingMessage, setLoadingMessage] = useState("분석 중...");
 
     const [sources, setSources] = useState([]);
@@ -96,7 +96,11 @@ const ThreadView = ({ initialQuery, onSearch, activeSection = 'answer', setActiv
                 const response = await fetch(`${API_BASE_URL}/api/search`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: initialQuery }),
+                    body: JSON.stringify({
+                        query: initialQuery,
+                        thread_id: threadId, // Pass threadId for context history
+                        contacts: contacts || [] // Pass contacts for Speed Dial
+                    }),
                     signal: controller.signal
                 });
 

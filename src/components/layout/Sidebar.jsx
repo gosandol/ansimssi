@@ -20,6 +20,8 @@ import {
     Sparkles,
     Download
 } from 'lucide-react';
+import SettingsPopup from './SettingsPopup';
+import SettingsModal from '../modals/SettingsModal';
 import { getHistory } from '../../lib/db';
 import styles from './Sidebar.module.css';
 
@@ -181,6 +183,19 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                 left: rect.right + 10
             });
         }
+    };
+
+    // Settings Logic
+    const [isSettingsMenuOpen, setIsSettingsMenuOpen] = React.useState(false);
+    const [settingsModalTab, setSettingsModalTab] = React.useState(null); // 'contacts', 'voice', etc. | null
+
+    const handleSettingsClick = () => {
+        setIsSettingsMenuOpen(!isSettingsMenuOpen);
+    };
+
+    const openSettingsModal = (tab) => {
+        setSettingsModalTab(tab);
+        setIsSettingsMenuOpen(false);
     };
 
     return (
@@ -349,7 +364,14 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                 )}
             </div>
 
-            <div className={styles.bottomSection}>
+            <div className={styles.bottomSection} style={{ position: 'relative' }}>
+                {/* Settings Popup Menu (Relative to Bottom Section) */}
+                <SettingsPopup
+                    isOpen={isSettingsMenuOpen}
+                    onClose={() => setIsSettingsMenuOpen(false)}
+                    onOpenModal={openSettingsModal}
+                />
+
                 {/* What's New */}
                 {/* What's New -> Notice Board */}
                 <button
@@ -377,11 +399,11 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                     </div>
                 </button>
 
-                {/* Settings & Help */}
+                {/* Settings & Help Button - Triggers Popup */}
                 <button
-                    className={styles.navItem}
+                    className={`${styles.navItem} ${isSettingsMenuOpen ? styles.active : ''}`}
                     title="설정 및 도움말"
-                    onClick={onSettingsClick}
+                    onClick={handleSettingsClick}
                 >
                     <div className={styles.navContent}>
                         <span className={styles.iconWrapper}><Settings size={20} /></span>
@@ -420,6 +442,14 @@ const Sidebar = ({ className, onNewThread, activeView, session, onLoginClick, on
                     </div>
                 )}
             </div>
+
+            {/* Global Settings Modal Container */}
+            {settingsModalTab && (
+                <SettingsModal
+                    initialTab={settingsModalTab}
+                    onClose={() => setSettingsModalTab(null)}
+                />
+            )}
         </aside>
     );
 };

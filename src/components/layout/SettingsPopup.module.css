@@ -1,0 +1,103 @@
+.popup {
+    width: 280px;
+    background: #1e1e1e;
+    /* Dark theme default as per Gemini screenshot, or use var(--bg-surface) for dynamic */
+    color: #e3e3e3;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    animation: scaleIn 0.15s ease-out;
+    border: 1px solid #333;
+}
+
+/* Light mode override if needed, or stick to dark menu for style */
+@media (prefers-color-scheme: light) {
+    .popup {
+        background: #ffffff;
+        color: #1f1f1f;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .menuItem:hover {
+        background: #f3f4f6 !important;
+    }
+
+    .divider {
+        background: #e5e7eb !important;
+    }
+
+    .footerInfo {
+        color: #6b7280 !important;
+    }
+}
+
+.backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 49;
+    cursor: default;
+}
+
+.section {
+    padding: 8px;
+}
+
+.divider {
+    height: 1px;
+    background: #333;
+    margin: 0;
+}
+
+.menuItem {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+    text-align: left;
+}
+
+.menuItem:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.menuItem span {
+    flex: 1;
+}
+
+.footerInfo {
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dot {
+    font-weight: bold;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}

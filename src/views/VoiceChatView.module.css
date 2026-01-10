@@ -1,97 +1,323 @@
+/* Base Layout & Overlay (Deep Dark Theme) */
 .overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(20, 20, 20, 0.95);
-    z-index: 2000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    animation: fadeIn 0.3s ease-out;
-    backdrop-filter: blur(10px);
-}
-
-.container {
+    background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    /* Deep Slate Slate */
+    z-index: 9999;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.container {
     width: 100%;
-    max-width: 800px;
-    padding: 2rem;
+    max-width: 600px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3rem 1.5rem 5rem;
+    position: relative;
+    /* Clean backdrop, no blur needed on container itself if overlay is solid/gradient */
 }
 
 .closeButton {
     position: absolute;
     top: 2rem;
     right: 2rem;
-    background: none;
+    background: transparent;
     border: none;
-    color: white;
+    color: rgba(255, 255, 255, 0.4);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.2s;
+    transition: all 0.3s ease;
+    z-index: 20;
 }
 
 .closeButton:hover {
-    opacity: 1;
+    color: white;
+    transform: rotate(90deg);
 }
 
+/* ------------------------------------------------------------------
+   LIQUID ORB VISUALIZER
+   ------------------------------------------------------------------ */
 .visualizerContainer {
-    width: 100%;
-    height: 200px;
+    flex: 1;
     display: flex;
-    justify-content: center;
     align-items: center;
-    margin-bottom: 3rem;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+    min-height: 350px;
+    filter: drop-shadow(0 0 40px rgba(59, 130, 246, 0.15));
+    /* Soft ambient glow */
 }
 
-.canvas {
+/* The Core Orb Wrapper */
+.orbWrapper {
+    width: 200px;
+    height: 200px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* The Liquid Orb itself */
+.orb {
     width: 100%;
     height: 100%;
+    /* Gradient: Deep Cyan to Royal Blue -> Very Premium */
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.9) 0%, rgba(59, 130, 246, 0.8) 100%);
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    position: absolute;
+    mix-blend-mode: screen;
+    /* Makes it glow against dark bg */
+    filter: blur(15px);
+    /* Soft, ethereal feel */
+    transition: all 0.5s ease-in-out;
+    animation: liquidMorph 8s ease-in-out infinite;
+    display: none;
+    /* Hidden by default, replaced by rings or shown based on state */
 }
 
-.statusText {
-    font-size: 1.5rem;
-    color: #e0e0e0;
+/* We will use multiple layers for depth */
+.orbLayer1,
+.orbLayer2,
+.orbLayer3 {
+    position: absolute;
+    border-radius: 50%;
+    transition: all 0.5s ease;
+}
+
+/* STATE: LISTENING (Soft Breathing Sphere) */
+/* Concept: A clean, calm blue sphere that breaths */
+.stateListening .orbWrapper .orb {
+    display: block;
+    width: 140px;
+    height: 140px;
+    filter: blur(8px);
+    background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.8), rgba(34, 211, 238, 0.4));
+    border-radius: 50%;
+    animation: breathe 4s ease-in-out infinite;
+    box-shadow: 0 0 60px rgba(59, 130, 246, 0.2);
+}
+
+/* STATE: PROCESSING (Fluid Morphing + Spinning) */
+/* Concept: The AI is "thinking", shape becomes unstable and liquid */
+.stateProcessing .orbWrapper .orb {
+    display: block;
+    width: 120px;
+    height: 120px;
+    filter: blur(6px);
+    background: linear-gradient(45deg, #22d3ee, #3b82f6);
+    animation: liquidSpin 3s linear infinite;
+    box-shadow: 0 0 80px rgba(34, 211, 238, 0.4);
+}
+
+/* STATE: SPEAKING (Active Undulation) */
+/* Concept: Responding to voice, gentle visual waves */
+.stateSpeaking .orbWrapper .orb {
+    display: block;
+    width: 150px;
+    height: 150px;
+    filter: blur(10px);
+    background: radial-gradient(circle, #38bdf8, #818cf8);
+    border-radius: 50%;
+    animation: speakPulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 70px rgba(56, 189, 248, 0.5);
+}
+
+/* Removed extra rings for simplicity ("Simple & Luxurious") */
+.orbRing {
+    display: none;
+}
+
+
+/* ------------------------------------------------------------------
+   CONTENT & TYPOGRAPHY
+   ------------------------------------------------------------------ */
+.contentArea {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    margin-top: 2rem;
+    z-index: 10;
+}
+
+.statusLabel {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.5);
     margin-bottom: 2rem;
-    font-weight: 300;
+    transition: opacity 0.3s;
 }
 
 .transcript {
-    font-size: 1.2rem;
-    color: #a0a0a0;
-    text-align: center;
-    min-height: 3rem;
-    margin-bottom: 4rem;
-    max-width: 80%;
+    font-size: 1.6rem;
+    line-height: 1.6;
+    font-weight: 500;
+    /* Regular weight for elegance */
+    color: white;
+    max-width: 700px;
+    margin-bottom: 2rem;
+    word-break: keep-all;
+    opacity: 0;
+    animation: fadeInUp 0.5s ease forwards;
 }
 
+.userTranscript {
+    color: #e2e8f0;
+}
+
+.aiResponse {
+    color: #f1f5f9;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+/* ------------------------------------------------------------------
+   CONTROLS (Minimalist)
+   ------------------------------------------------------------------ */
 .controls {
     display: flex;
-    gap: 2rem;
+    align-items: center;
+    justify-content: center;
+    margin-top: auto;
+    padding-bottom: 2rem;
 }
 
 .micButton {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background-color: #333;
-    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    /* Very subtle glass */
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    backdrop-filter: blur(4px);
 }
 
+.micButton:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.micButton:active {
+    transform: scale(0.95);
+}
+
+/* Active State (Listening off / Stop) */
 .micButton.active {
-    background-color: #4285f4;
-    /* Google Blue style */
-    box-shadow: 0 0 30px rgba(66, 133, 244, 0.5);
-    transform: scale(1.1);
+    /* If user wants to stop, maybe turn red? Or keep minimal? */
+    /* Let's keep it minimal white/glass to maintain premium feel, maybe just icon changes */
+    /* If "Active" means "Listening is ON", we usually show a Stop button */
+}
+
+
+/* ------------------------------------------------------------------
+   ANIMATIONS
+   ------------------------------------------------------------------ */
+
+@keyframes liquidMorph {
+    0% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+
+    50% {
+        border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    }
+
+    100% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+}
+
+@keyframes liquidSpin {
+    0% {
+        transform: rotate(0deg);
+        border-radius: 40% 60% 70% 30% / 40% 40% 60% 50%;
+    }
+
+    33% {
+        border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%;
+    }
+
+    66% {
+        border-radius: 40% 60% 30% 70% / 60% 30% 70% 40%;
+    }
+
+    100% {
+        transform: rotate(360deg);
+        border-radius: 40% 60% 70% 30% / 40% 40% 60% 50%;
+    }
+}
+
+@keyframes breathe {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+@keyframes speakPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.9;
+        filter: blur(10px);
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+        filter: blur(15px);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes fadeIn {

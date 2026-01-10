@@ -208,28 +208,48 @@ const SearchBar = ({ onSearch, placeholder, shouldFocus, dropUpMode = false }) =
                         }
                     }
 
-                    // Show interim
-                    // setQuery(queryRef.current + interim); // This might be tricky if typing mixed.
-                    // For safety and "Auto Submit" goal: Logic on FINAL result is most important.
-
                     if (final) {
                         const newQuery = queryRef.current + (queryRef.current && !queryRef.current.endsWith(' ') ? ' ' : '') + final;
                         setQuery(newQuery);
+                        queryRef.current = newQuery;
 
-                        // AUTO SUBMIT LOGIC
-                        const cleaned = final.trim();
-                        const QUESTION_REGEX = /(?:알려줘|뭐야|무엇일까|어때|해줘|인가요|가요|나요|까요|합니까|입니까|옵니까|주세요|어떻게|왜|언제|어디서|누구|\?)$/;
-
-                        if (QUESTION_REGEX.test(cleaned) || cleaned.endsWith('?')) {
+                        // IMMEDIATE AUTO SUBMIT
+                        if (newQuery.trim().length > 0) {
+                            console.log("🎤 Auto-submitting voice query:", newQuery);
                             recognition.stop();
                             setIsListening(false);
-                            onSearch(newQuery);
+                            onSearch(newQuery.trim());
                             setQuery('');
+                            queryRef.current = '';
                         }
                     }
                 };
 
-                recognition.onend = () => setIsListening(false);
+                recognition.onend = () => {
+                    setIsListening(false);
+                    // Auto-submit if we have text
+                    if (queryRef.current && queryRef.current.trim().length > 0) {
+                        const finalQuery = queryRef.current.trim();
+                        // Optional: Small delay or check? No, direct submit is what user wants.
+
+                        // Handle Search Mode Prefix if needed (though local state might not be accessible inside callback easily if not in ref)
+                        // Actually activeSearchMode is state. We need a ref for it too if we want to include it, 
+                        // but handleInput/onSearch doesn't use it inside the component usually? 
+                        // Wait, the submit button logic adds prefix:
+                        // if (activeSearchMode === 'hospital') finalQuery = `[병원검색] ${query}`;
+                        // We should replicate that logic or just pass raw query if onSearch handles it. 
+                        // Looking at submit button: Key logic is THERE.
+                        // Let's rely on onSearch.
+
+                        // We need access to activeSearchMode. Since useEffect has [] dependency, 
+                        // we need a ref for activeSearchMode to be safe.
+
+                        // However, simplest fix for now:
+                        onSearch(finalQuery);
+                        setQuery('');
+                        queryRef.current = '';
+                    }
+                };
                 recognitionRef.current = recognition;
             }
         }

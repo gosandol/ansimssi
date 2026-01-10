@@ -34,40 +34,38 @@
 
 /* MARKDOWN STYLES (The Core) */
 .answerContent {
-    font-size: 1.05rem;
-    /* Slightly larger for easier reading */
-    line-height: 1.8;
-    /* Generous line height */
+    font-size: 1rem;
+    /* Standardized body size */
+    line-height: 1.7;
+    /* Optimal readability */
     color: var(--text-primary);
 }
 
 .answerContent hr {
     border: none;
-    border-top: 1px solid #4A4A4A;
-    /* More visible separator */
-    margin: 2rem 0;
+    border-top: 1px solid var(--border-subtle);
+    margin: 1.5rem 0;
 }
 
 .answerContent strong {
-    font-weight: 700;
+    font-weight: 600;
+    /* Balanced bold */
     color: var(--text-primary);
-    /* High contrast bold */
 }
 
 /* Lists - Key Gemini Trait */
 .answerContent ul,
 .answerContent ol {
-    margin: 1.5rem 0;
+    margin: 1rem 0;
     padding-left: 0;
-    /* Removing default padding to handle manually */
     list-style: none;
-    /* Custom markers */
 }
 
 .answerContent li {
-    margin-bottom: 1.2rem;
+    margin-bottom: 0.8rem;
     position: relative;
     padding-left: 1.5rem;
+    line-height: 1.6;
 }
 
 /* Custom Bullet used in Gemini */
@@ -89,29 +87,42 @@
 }
 
 .answerContent ol li strong {
-    /* If the list item starts with Bold text (Title), make it pop */
     display: block;
-    margin-bottom: 0.4rem;
-    font-size: 1.1rem;
-}
-
-/* Headings */
-.answerContent h1,
-.answerContent h2,
-.answerContent h3 {
-    margin-top: 2.5rem;
-    margin-bottom: 1rem;
-    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 1.05rem;
+    /* Slightly larger than body */
     color: var(--text-primary);
-    /* Bright White-Blue hints */
-    line-height: 1.4;
+    font-weight: 700;
+}
+
+/* Headings - Adjusted for professional hierarchy (No more huge text) */
+.answerContent h1 {
+    font-size: 1.3rem;
+    /* Reduced from default */
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+}
+
+.answerContent h2 {
+    font-size: 1.2rem;
+    /* Subtle section header */
+    font-weight: 600;
+    margin-top: 1.8rem;
+    margin-bottom: 0.8rem;
+    color: var(--text-primary);
 }
 
 .answerContent h3 {
-    font-size: 1.2rem;
-    border-left: 3px solid #A8C7FA;
-    /* Gemini Accent Line */
-    padding-left: 1rem;
+    font-size: 1.1rem;
+    /* Just above body size */
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid #60A5FA;
+    /* Refined Blue Accent */
+    padding-left: 0.8rem;
 }
 
 /* Note / Callout Block */
@@ -230,7 +241,9 @@ blockquote {
     padding: 1rem;
     border-radius: 8px;
     margin-bottom: 1.5rem;
-    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    /* Explicitly smaller than body */
     line-height: 1.5;
 }
 

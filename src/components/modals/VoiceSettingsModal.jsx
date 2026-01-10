@@ -27,9 +27,20 @@ const VoiceSettingsModal = ({ onClose, settings, onUpdateSettings }) => {
             // Filter for Korean voices or just all if none? Prefer KR.
             const krVoices = voices.filter(v => v.lang.includes('ko') || v.lang.includes('KR'));
 
+            // Deduplicate voices based on voiceURI to prevent "double check" UI bugs
+            const uniqueVoices = [];
+            const seenURIs = new Set();
+
+            for (const v of krVoices) {
+                if (!seenURIs.has(v.voiceURI)) {
+                    seenURIs.add(v.voiceURI);
+                    uniqueVoices.push(v);
+                }
+            }
+
             // If no KR voices found (rare but possible), fall back to all or English?
             // Let's assume at least one.
-            const finalList = krVoices.length > 0 ? krVoices : voices.slice(0, 5); // Fallback
+            const finalList = uniqueVoices.length > 0 ? uniqueVoices : voices.slice(0, 5); // Fallback
             setAvailableVoices(finalList);
 
             // Set default selected if not set
@@ -129,7 +140,11 @@ const VoiceSettingsModal = ({ onClose, settings, onUpdateSettings }) => {
                             ) : (
                                 availableVoices.map((voice, idx) => {
                                     /* Use mock names if we match known system voices, or just Voice 1, 2 */
-                                    const displayName = voice.name.replace('Google', '').replace('한국어', '').trim() || `음성 ${idx + 1}`;
+                                    const displayName = voice.name
+                                        .replace('Google', '')
+                                        .replace('한국어', '')
+                                        .replace(/\(.*\)/g, '') // Remove anything in parens
+                                        .trim() || `음성 ${idx + 1}`;
                                     const isSelected = selectedVoiceURI === voice.voiceURI;
 
                                     return (

@@ -77,6 +77,11 @@ def fetch_system_prompt():
 
 **제약 사항:**
 *   의학적 진단은 내리지 말고, 정보 제공 차원에서 답변하며 전문가 상담을 권유하세요.
+*   **기억력 유지 (중요)**: 
+    *   제공된 **[Conversation History]**를 반드시 검토하세요. 
+    *   사용자가 이전에 언급한 **증상, 기분, 약물 복용 여부, 고민** 등을 기억하고, 현재 답변에 반영하세요. 
+    *   예: 사용자가 앞서 "머리가 아파"라고 했다면, 이후 식사 추천 시 "두통에 부담 없는", "소화가 잘 되는" 음식을 추천해야 합니다.
+*   의학적 진단은 내리지 말고, 정보 제공 차원에서 답변하며 전문가 상담을 권유하세요.
 *   Markdown 형식을 사용하여 가독성 있게 답변하세요.
 """ # Updated Persona Definition
     
@@ -177,6 +182,10 @@ async def search_endpoint(request: SearchRequest):
                         print(f"📖 Loaded {len(history_msgs)} history messages for context.")
                 except Exception as e:
                     print(f"History Fetch Error: {e}")
+            
+            # [CONTEXT GUARD] Ensure Gemini 'sees' the history clearly
+            if chat_history_text:
+                full_context = f"**PREVIOUS CONVERSATION HISTORY (Context)**:\n{chat_history_text}\n\n" + full_context
 
             # 2. Generate Answer with Gemini (Streaming)
             system_prompt_content = fetch_system_prompt()

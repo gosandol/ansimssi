@@ -11,6 +11,7 @@ const VoiceChatView = ({ isOpen, onClose }) => {
     const [transcript, setTranscript] = useState('');
     const [aiResponse, setAiResponse] = useState('');
     const [errorMessage, setErrorMessage] = useState(''); // New Error State
+    const [threadId, setThreadId] = useState(null); // Session ID for memory
 
     // Settings State
     const [showSettings, setShowSettings] = useState(false);
@@ -41,6 +42,14 @@ const VoiceChatView = ({ isOpen, onClose }) => {
                     setVoiceSettings(prev => ({ ...prev, ...JSON.parse(storedSettings) }));
                 } catch (e) { }
             }
+        }
+
+        // Generate new session thread_id when opened
+        if (isOpen) {
+            // Simple random ID generator (browser compatible)
+            const newThreadId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+            setThreadId(newThreadId);
+            console.log("🎤 Global Voice Thread ID:", newThreadId);
         }
     }, [isOpen]);
 
@@ -158,7 +167,10 @@ const VoiceChatView = ({ isOpen, onClose }) => {
             const response = await fetch(`${API_BASE_URL}/api/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: query })
+                body: JSON.stringify({
+                    query: query,
+                    thread_id: threadId // Pass the persistent session ID
+                })
             });
             const data = await response.json();
             const answer = data.answer || "죄송합니다. 답변을 찾을 수 없습니다.";

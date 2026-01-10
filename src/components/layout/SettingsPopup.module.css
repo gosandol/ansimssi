@@ -19,8 +19,9 @@
    ------------------------------------------------------------------ */
 @media (min-width: 769px) {
     .popup {
-        position: absolute;
-        bottom: 56px;
+        position: fixed;
+        z-index: 9999;
+        bottom: 80px;
         /* Position above the buttons */
         left: 0;
         /* Aligned with sidebar edge */

@@ -18,7 +18,7 @@ const GlobalHeader = ({ onMenuClick, session, isThreadMode, onBackClick, onLogin
                 {/* Always show Ansimssi Title */}
                 <div className={styles.logoArea} onClick={onBackClick} style={{ cursor: 'pointer' }}>
                     {/* Placeholder for Ansimssi Font Title if implemented, using text for now */}
-                    <span className={styles.logoText} style={{ fontFamily: 'var(--font-ansimssi), sans-serif', fontWeight: 'bold' }}>안심씨</span>
+                    <span className={styles.logoText}>안심씨</span>
                 </div>
             </div>
 

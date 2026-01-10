@@ -59,6 +59,10 @@
     letter-spacing: -0.02em;
 }
 
+.sidebar.collapsed .headerLogoGroup {
+    gap: 0;
+}
+
 .sidebarLogoText.hidden {
     opacity: 0;
     width: 0;

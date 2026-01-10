@@ -14,20 +14,10 @@ import styles from './SettingsPopup.module.css';
 const SettingsPopup = ({ isOpen, onClose, anchorRef, onOpenModal }) => {
     if (!isOpen) return null;
 
-    // Calculate position (simple bottom-left anchor logic)
-    // In a real app we might use floating-ui, but for now absolute positioning relative to sidebar container works
-    // provided the parent is relative. Or fixed positioning.
-    const style = {
-        position: 'absolute',
-        bottom: '60px', // Above the settings button
-        left: '10px',
-        zIndex: 50
-    };
-
     return (
         <>
             <div className={styles.backdrop} onClick={onClose} />
-            <div className={styles.popup} style={style}>
+            <div className={styles.popup}>
                 <div className={styles.section}>
                     <button className={styles.menuItem} onClick={() => { onOpenModal('contacts'); onClose(); }}>
                         <Phone size={18} />

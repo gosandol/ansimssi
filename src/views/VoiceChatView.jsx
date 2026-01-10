@@ -50,13 +50,13 @@ const VoiceChatView = ({ isOpen, onClose }) => {
         localStorage.setItem('ansimssi_voice_settings', JSON.stringify(newSettings));
     };
 
-    // 2. Initialize Speech Recognition (Only if hasPermission)
+    // 2. Initialize Speech Recognition (Only if hasPermission AND isOpen)
     useEffect(() => {
-        if (typeof window !== 'undefined' && hasPermission) {
+        if (typeof window !== 'undefined' && hasPermission && isOpen) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (SpeechRecognition) {
                 const recognition = new SpeechRecognition();
-                recognition.continuous = false;
+                recognition.continuous = false; // We use continuous restart logic manually for better control
                 recognition.interimResults = true;
                 recognition.lang = 'ko-KR';
 
@@ -80,14 +80,16 @@ const VoiceChatView = ({ isOpen, onClose }) => {
                 };
 
                 recognition.onerror = (event) => {
+                    if (event.error === 'aborted') return; // Ignore manual aborts
                     console.error('Voice Recognition Error:', event.error);
+
                     if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                         setStatus('error');
                         setErrorMessage("마이크 권한이 거부되었거나 사용할 수 없습니다.");
                         setHasPermission(false);
                         localStorage.removeItem('ansimssi_voice_permission');
                     } else if (event.error === 'no-speech') {
-                        console.log("No speech detected.");
+                        // Just silent restart handled by onend usually, or ignore
                     } else if (event.error === 'network') {
                         setStatus('error');
                         setErrorMessage("네트워크 연결을 확인해 주세요.");
@@ -95,57 +97,55 @@ const VoiceChatView = ({ isOpen, onClose }) => {
                 };
 
                 recognition.onend = () => {
-                    // Restarts only if listening AND hands-free is ON (default true) AND settings closed
-                    // Use ref to access latest 'voiceSettings' if needed, or rely on closure (might be stale?)
-                    // Closure of useEffect captures initial/dep voiceSettings. 
-                    // To be safe, we added voiceSettings.isHandsFree to deps, so this effect recreates.
-                    if (status === 'listening' && !showSettings && voiceSettings.isHandsFree) {
+                    // Check strict conditions for restart:
+                    // 1. Must be 'listening' state (not processing/speaking/error)
+                    // 2. Settings must be closed
+                    // 3. Hands-free must be enabled
+                    // 4. Component must be OPEN (checked via ref or effect cleanup handles it)
+
+                    // Note: We use the live values from state/props here. 
+                    // To avoid stale closures, we depend on them in the effect, causing re-attach.
+                    // But we also check recognitionRef to ensure we are the active instance.
+                    if (recognition !== recognitionRef.current) return;
+
+                    if (status === 'listening' && !showSettings && voiceSettings.isHandsFree && isOpen) {
                         try {
-                            console.log("Restarting recognition (Hands-Free)...");
                             recognition.start();
-                        } catch (e) { /* ignore */ }
+                        } catch (e) {
+                            // If already started or other error, ignore
+                        }
                     }
                 };
 
                 recognitionRef.current = recognition;
 
-                // RAPID START: Start immediately if status is listening
-                if (status === 'listening') {
+                // Initial Start
+                if (status === 'listening' && !showSettings) {
                     try {
                         recognition.start();
                     } catch (e) { /* ignore */ }
                 }
+
+                return () => {
+                    recognition.abort(); // Force hard stop on unmount/dep change
+                    if (recognitionRef.current === recognition) {
+                        recognitionRef.current = null;
+                    }
+                };
 
             } else {
                 setStatus('error');
                 setErrorMessage("이 브라우저는 음성 인식을 지원하지 않습니다.");
             }
         }
-    }, [hasPermission, status, showSettings, voiceSettings.isHandsFree]);
+    }, [hasPermission, isOpen, status, showSettings, voiceSettings.isHandsFree]);
 
-    // 3. State Machine Controller
-    useEffect(() => {
-        if (!isOpen || !hasPermission || showSettings) {
-            // Stop listening while settings are open
-            recognitionRef.current?.stop();
-            return;
-        }
+    // 3. Watchdog / State changes handled by above effect mostly, 
+    // but specific actions might need refs. 
+    // Actually, with the dependency array above, we recreate the instance on state change.
+    // This is safer for consistency but 'recognition.continuous = false' interactions.
+    // We remove the separate controller effect to avoid conflict.
 
-        const recognition = recognitionRef.current;
-
-        if (status === 'listening') {
-            try {
-                recognition?.start();
-            } catch (e) { /* Already started */ }
-        } else {
-            recognition?.stop();
-        }
-
-        return () => {
-            recognition?.stop();
-            synthRef.current?.cancel();
-        };
-    }, [isOpen, status, hasPermission, showSettings]);
 
 
     const handleVoiceQuery = async (query) => {
@@ -213,7 +213,7 @@ const VoiceChatView = ({ isOpen, onClose }) => {
     };
 
     const handleClose = () => {
-        recognitionRef.current?.stop();
+        recognitionRef.current?.abort(); // Abort immediately to release mic
         synthRef.current?.cancel();
         setStatus('listening'); // Reset for next time
         setTranscript('');
@@ -279,10 +279,13 @@ const VoiceChatView = ({ isOpen, onClose }) => {
                             <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>연결 끊김</div>
                         </div>
                     ) : (
-                        <div className={styles.orbWrapper}>
-                            <div className={styles.orbRing} style={{ animationDelay: '0s' }}></div>
-                            <div className={styles.orbRing} style={{ animationDelay: '0.5s' }}></div>
-                            <div className={styles.orb}></div>
+                        <div className={styles.cosmicWrapper}>
+                            <div className={styles.coreGlow}></div>
+                            <div className={styles.neuralRing} style={{ '--index': 0 }}></div>
+                            <div className={styles.neuralRing} style={{ '--index': 1 }}></div>
+                            <div className={styles.neuralRing} style={{ '--index': 2 }}></div>
+                            <div className={styles.neuralRing} style={{ '--index': 3 }}></div>
+                            <div className={styles.particles}></div>
                         </div>
                     )}
                 </div>

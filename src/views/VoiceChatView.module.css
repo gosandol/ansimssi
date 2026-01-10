@@ -52,7 +52,7 @@
 }
 
 /* ------------------------------------------------------------------
-   LIQUID ORB VISUALIZER
+   COSMIC NEURAL BRAIN VISUALIZER (Samsung Galaxy/Neuron Style)
    ------------------------------------------------------------------ */
 .visualizerContainer {
     flex: 1;
@@ -61,89 +61,364 @@
     justify-content: center;
     width: 100%;
     position: relative;
-    min-height: 350px;
-    filter: drop-shadow(0 0 40px rgba(59, 130, 246, 0.15));
-    /* Soft ambient glow */
+    min-height: 400px;
+    perspective: 1000px;
 }
 
-/* The Core Orb Wrapper */
-.orbWrapper {
-    width: 200px;
-    height: 200px;
+/* 3D Wrapper for the Galaxy */
+.cosmicWrapper {
+    width: 300px;
+    height: 300px;
     position: relative;
+    transform-style: preserve-3d;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-/* The Liquid Orb itself */
-.orb {
+/* Central Brain Core (The "Sun") */
+.coreGlow {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff, #60a5fa, #1e40af);
+    box-shadow: 0 0 50px rgba(59, 130, 246, 0.8), 0 0 100px rgba(37, 99, 235, 0.4);
+    position: absolute;
+    z-index: 10;
+    transition: all 0.5s ease;
+    animation: corePulse 3s ease-in-out infinite;
+}
+
+/* Neural Rings (The "Orbits") */
+.neuralRing {
+    position: absolute;
     width: 100%;
     height: 100%;
-    /* Gradient: Deep Cyan to Royal Blue -> Very Premium */
-    background: linear-gradient(135deg, rgba(34, 211, 238, 0.9) 0%, rgba(59, 130, 246, 0.8) 100%);
-    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Particles on the ring */
+    background: transparent;
+    box-shadow: 0 0 0 transparent;
+    /* Base */
+
+    /* Using pseudo-elements to create "particles" or "neurons" on the ring */
+    /* We rotate these rings in 3D space */
+}
+
+.neuralRing::before,
+.neuralRing::after {
+    content: '';
     position: absolute;
-    mix-blend-mode: screen;
-    /* Makes it glow against dark bg */
-    filter: blur(15px);
-    /* Soft, ethereal feel */
-    transition: all 0.5s ease-in-out;
-    animation: liquidMorph 8s ease-in-out infinite;
-    display: none;
-    /* Hidden by default, replaced by rings or shown based on state */
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 0 10px white, 0 0 20px #3b82f6;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
 }
 
-/* We will use multiple layers for depth */
-.orbLayer1,
-.orbLayer2,
-.orbLayer3 {
+.neuralRing::after {
+    left: auto;
+    right: 0;
+    width: 6px;
+    height: 6px;
+    opacity: 0.8;
+}
+
+/* Specific Ring Orientations */
+.neuralRing:nth-child(2) {
+    /* Index 0 */
+    width: 280px;
+    height: 80px;
+    /* Ellipse */
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    animation: orbit 8s linear infinite;
+}
+
+.neuralRing:nth-child(3) {
+    /* Index 1 */
+    width: 280px;
+    height: 80px;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    transform: rotateY(60deg);
+    animation: orbit 9s linear infinite reverse;
+}
+
+.neuralRing:nth-child(4) {
+    /* Index 2 */
+    width: 280px;
+    height: 80px;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    transform: rotateY(-60deg);
+    animation: orbit 10s linear infinite;
+}
+
+.neuralRing:nth-child(5) {
+    /* Index 3 - Random Chaotic Ring */
+    width: 200px;
+    height: 200px;
+    /* Circle */
+    border: 1px dotted rgba(255, 255, 255, 0.1);
+    transform: rotateX(70deg);
+    animation: orbit 12s linear infinite;
+}
+
+/* Free Floating Particles */
+.particles {
     position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(white 1px, transparent 1px),
+        radial-gradient(rgba(255, 255, 255, 0.5) 2px, transparent 2px);
+    background-size: 50px 50px, 100px 100px;
+    background-position: 0 0, 20px 20px;
     border-radius: 50%;
-    transition: all 0.5s ease;
+    opacity: 0.3;
+    animation: particleDrift 20s linear infinite;
 }
 
-/* STATE: LISTENING (Soft Breathing Sphere) */
-/* Concept: A clean, calm blue sphere that breaths */
-.stateListening .orbWrapper .orb {
-    display: block;
-    width: 140px;
-    height: 140px;
-    filter: blur(8px);
-    background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.8), rgba(34, 211, 238, 0.4));
+/* STATE: LISTENING (Calm, Orderly) */
+.stateListening .neuralRing {
+    opacity: 0.7;
+    animation-duration: 8s;
+    /* Slow, calm speed */
+}
+
+.stateListening .coreGlow {
+    box-shadow: 0 0 50px rgba(59, 130, 246, 0.6);
+}
+
+/* STATE: PROCESSING (Brain Activation) */
+/* Chaos, Speed, Brightness */
+.stateProcessing .coreGlow {
+    transform: scale(1.2);
+    background: radial-gradient(circle, #fff, #a855f7, #6b21a8);
+    /* Purple/Processing color */
+    box-shadow: 0 0 80px rgba(168, 85, 247, 0.8), 0 0 120px rgba(168, 85, 247, 0.4);
+    animation: corePulse 0.5s ease-in-out infinite;
+    /* Rapid pulse */
+}
+
+.stateProcessing .neuralRing {
+    border-color: rgba(168, 85, 247, 0.4);
+    animation-duration: 1.5s !important;
+    /* Extremely fast spin */
+}
+
+.stateProcessing .neuralRing::before,
+.stateProcessing .neuralRing::after {
+    background: #e9d5ff;
+    box-shadow: 0 0 15px #d8b4fe;
+}
+
+/* STATE: SPEAKING (Harmonic Wave) */
+/* Expansion, Rhythm */
+.stateSpeaking .coreGlow {
+    background: radial-gradient(circle, #fff, #38bdf8, #0ea5e9);
+    animation: speakPulse 1s ease-in-out infinite;
+}
+
+.stateSpeaking .neuralRing {
+    animation-duration: 3s;
+    /* Moderate activated speed */
+    border-color: rgba(56, 189, 248, 0.5);
+    transform: scale(1.1);
+    /* Expand slightly */
+}
+
+/* Animations */
+@keyframes orbit {
+    0% {
+        transform: rotate3d(1, 1, 1, 0deg);
+    }
+
+    100% {
+        transform: rotate3d(1, 1, 1, 360deg);
+    }
+}
+
+@keyframes corePulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+@keyframes particleDrift {
+    0% {
+        transform: scale(0.9) rotate(0deg);
+    }
+
+    100% {
+        transform: scale(1.1) rotate(360deg);
+    }
+}
+
+/* Override Orbit Animations for specific rings to maintain their tilt AND rotate */
+/* The previous shorthand 'animation: orbit' overrides the 'transform' in the class definition. */
+/* We need to nest the rotation or use a wrapper. 
+   Simpler approach: Use specific keyframes for each ring or rotate Z inside the ring?
+   CSS transforms with combined rotation are tricky.
+   BETTER: Rotate the *container* of the ring, or use specific keyframes. 
+   Let's define specific keyframes for the "Atomic" look where ellipses rotate around the core.
+*/
+
+/* Redefining keyframes for specific axes */
+@keyframes orbitRing1 {
+    from {
+        transform: rotateZ(0deg) rotateX(60deg) rotateY(0deg);
+    }
+
+    to {
+        transform: rotateZ(360deg) rotateX(60deg) rotateY(0deg);
+    }
+}
+
+/* Wait, to mimic an atom: the ellipse itself is fixed in tilt, but the *Orbit* path?
+   Or does the ring spin?
+   The image shows chaotic particles *forming* a circle.
+   Let's just spin the rings 360 on Z axis, but keeping them tilted is hard with single element.
+   Standard atom: 3 rings, tilted 60, -60, 0.
+   To animate the "electrons" (dots), we rotate the RING on its Z-axis (normal to plane).
+*/
+
+.neuralRing:nth-child(2) {
+    transform: rotateX(70deg);
+    /* Flat-ish ring */
+    animation: spinZ 4s linear infinite;
+}
+
+.neuralRing:nth-child(3) {
+    transform: rotateX(70deg) rotateY(60deg);
+    animation: spinZ 4s linear infinite reverse;
+}
+
+.neuralRing:nth-child(4) {
+    transform: rotateX(70deg) rotateY(-60deg);
+    animation: spinZ 4s linear infinite;
+}
+
+.neuralRing:nth-child(5) {
+    /* Outer chaotic shell */
+    transform: scale(1.5);
+    border: none;
+    animation: spinZ 20s linear infinite;
+}
+
+@keyframes spinZ {
+    from {
+        transform: rotateZ(0deg);
+    }
+
+    to {
+        transform: rotateZ(360deg);
+    }
+}
+
+/* Note: CSS Transform order matters. If I define transform in class, animation overwrites it unless I include it in keyframes.
+   Actually, the best way for React/CSS reuse is to put the animation on an inner wrapper, or use specific keyframes for each.
+   Let's use the 'rotateZ' keyframe but wrap the rings in a div that holds the tilt?
+   No, let's keep it simple: 
+   The `animation` simply rotates Z. But since the ring is elliptical (via width/height or border-radius), rotation distorts it if not careful.
+   Actually, drawing a circle and tilting it via 3D transform is easier.
+   So: Ring is a circle. We tilt it. Then we rotate it? No, if we rotate a tilted circle it wobbles.
+   If we want "Electrons flowing along the path", we rotate the ring on its own Z axis.
+   So: 
+   1. Ring is a CIRCLE.
+   2. Ring has particles.
+   3. We TILT the ring via `transform: rotateX(...)`.
+   4. We ANIMATE `transform: rotateZ(...)` -> This spins the ring in its own plane.
+   BUT `transform` property is single-slot.
+   
+   Fix: 
+   .neuralRing is the TILTED container.
+   .neuralRing::before (particle) is animated along the path?
+   
+   Alternative: Just use '3D Atom' CSS libraries logic.
+   Container -> Tilted.
+   Inner -> Spinning.
+*/
+
+.neuralRing {
+    /* Reset ellipse logic, make them circular but tilted 3D */
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
-    animation: breathe 4s ease-in-out infinite;
-    box-shadow: 0 0 60px rgba(59, 130, 246, 0.2);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    position: absolute;
+    transform-style: preserve-3d;
 }
 
-/* STATE: PROCESSING (Fluid Morphing + Spinning) */
-/* Concept: The AI is "thinking", shape becomes unstable and liquid */
-.stateProcessing .orbWrapper .orb {
-    display: block;
-    width: 120px;
-    height: 120px;
-    filter: blur(6px);
-    background: linear-gradient(45deg, #22d3ee, #3b82f6);
-    animation: liquidSpin 3s linear infinite;
-    box-shadow: 0 0 80px rgba(34, 211, 238, 0.4);
+/* Ring 1: Generic Tilted */
+.neuralRing:nth-child(2) {
+    transform: rotateY(0deg) rotateX(65deg);
 }
 
-/* STATE: SPEAKING (Active Undulation) */
-/* Concept: Responding to voice, gentle visual waves */
-.stateSpeaking .orbWrapper .orb {
-    display: block;
-    width: 150px;
-    height: 150px;
-    filter: blur(10px);
-    background: radial-gradient(circle, #38bdf8, #818cf8);
-    border-radius: 50%;
-    animation: speakPulse 1.5s ease-in-out infinite;
-    box-shadow: 0 0 70px rgba(56, 189, 248, 0.5);
+.neuralRing:nth-child(2)::before {
+    animation: electronOrbit 2s linear infinite;
 }
 
-/* Removed extra rings for simplicity ("Simple & Luxurious") */
-.orbRing {
-    display: none;
+.neuralRing:nth-child(2)::after {
+    animation: electronOrbit 2s linear infinite -1s;
+}
+
+/* Ring 2: Tilted Left */
+.neuralRing:nth-child(3) {
+    transform: rotateY(60deg) rotateX(65deg);
+}
+
+.neuralRing:nth-child(3)::before {
+    animation: electronOrbit 2.5s linear infinite -0.5s;
+}
+
+/* Ring 3: Tilted Right */
+.neuralRing:nth-child(4) {
+    transform: rotateY(-60deg) rotateX(65deg);
+}
+
+.neuralRing:nth-child(4)::before {
+    animation: electronOrbit 3s linear infinite -1.2s;
+}
+
+/* We animate the pseudo-elements (particles) to rotate AROUND the ring center */
+@keyframes electronOrbit {
+    0% {
+        transform: rotateZ(0deg) translateX(100px) rotateZ(0deg);
+    }
+
+    /* translateX = Radius */
+    100% {
+        transform: rotateZ(360deg) translateX(100px) rotateZ(-360deg);
+    }
+
+    /* Counter-rotate to keep particle upright? Not needed for dots */
+}
+
+/* Wait, translateX moves it to the edge. rotateZ spins the whole arm. */
+
+/* Correction: 
+   We keep the Ring STATIC (or slowly rotating).
+   We animate the PARTICLES (dots).
+*/
+.neuralRing::before,
+.neuralRing::after {
+    left: 50%;
+    top: 50%;
+    /* Center origin */
+    margin-left: -4px;
+    margin-top: -4px;
+    transform-origin: center center;
+    /* The animation will handle the offset */
 }
 
 

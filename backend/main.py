@@ -146,12 +146,18 @@ async def search(request: SearchRequest):
 
             # [PERSONA LOGIC] Dynamic Disclaimer Detection
             # Triggers if query contains medical keywords
-            medical_keywords = ["약", "질병", "치료", "증상", "복용", "수술", "병원", "진료", "부작용", "효능", "통증"]
+            medical_keywords = ["약", "질병", "치료", "증상", "복용", "수술", "병원", "진료", "부작용", "효능", "통증", "혈압", "당뇨", "건강", "검진", "예방", "섭취", "영양제"]
             has_medical_intent = any(k in request.query for k in medical_keywords)
+
+            # Triggers if query contains legal keywords
+            legal_keywords = ["층간소음", "분쟁", "규약", "법률", "법적", "책임", "손해배상", "고소", "판례", "변호사", "소송", "합의", "민사", "형사", "위자료"]
+            has_legal_intent = any(k in request.query for k in legal_keywords)
             
             disclaimer_text = ""
             if has_medical_intent:
                 disclaimer_text = "참고용으로만 사용하시기 바랍니다. 의학적인 자문이나 진단이 필요한 경우 전문가에게 문의하세요."
+            elif has_legal_intent:
+                disclaimer_text = "참고용으로만 사용하시기 바랍니다. 법률적인 자문이나 도움이 필요한 경우 전문가에게 문의하세요."
 
             # Map sources for Frontend
             frontend_sources = [
